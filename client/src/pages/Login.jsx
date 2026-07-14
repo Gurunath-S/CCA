@@ -60,7 +60,7 @@ const Login = () => {
           : 'http://localhost:5000';
 
         window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "403992425264-tp4p2flguojrg091qv2uoob6hph96n2l.apps.googleusercontent.com",
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
           ux_mode: "redirect",
           login_uri: `${apiBaseUrl}/api/auth/google`
         });
