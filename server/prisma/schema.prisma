@@ -1,0 +1,85 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String               @id @default(uuid())
+  email              String               @unique
+  name               String?
+  picture            String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  profile            UserProfile?
+  customAttributes   CharacterAttribute[]
+  assessments        Assessment[]
+  notes              PersonalNote[]
+  refreshTokens      RefreshToken[]
+}
+
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ageGroup  String?  // Options: "15–20", "20–25", "25–30", "30–40", "40–50", "50–60", "Above 60"
+  theme     String   @default("Serenity") // Options: "Serenity", "Midnight Focus", "Nature", "Classic", "Vivekananda"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CharacterAttribute {
+  id          String       @id @default(uuid())
+  name        String
+  category    String       @default("General") // "Yama", "Niyama", "General", "Custom"
+  description String?      @db.Text
+  isCustom    Boolean      @default(false)
+  userId      String?      // Null for global predefined attributes, User ID for user-created custom attributes
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessments Assessment[]
+  notes       PersonalNote[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([name, userId])
+}
+
+model Assessment {
+  id                String             @id @default(uuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId       String
+  character         CharacterAttribute @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  assessmentDate    DateTime           @default(now())
+  alignmentScore    Int                // Scale 1 to 5
+  othersRecognize   String             // Options: "Yes Regularly", "Yes Sometimes", "No Not at all", "Others remind me"
+  consciousEffort   Boolean            // true/false
+  effortLevel       String             // Options: "Aware but difficult", "Catch myself and improve", "Practice naturally"
+  practiceFrequency String             // Options: "Didn't practice", "1–5", "More than 5"
+  personalNote      String?            @db.Text
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+}
+
+model PersonalNote {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId String
+  character   CharacterAttribute @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  content     String             @db.Text
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique @db.VarChar(500)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
