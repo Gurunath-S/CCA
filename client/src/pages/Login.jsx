@@ -55,10 +55,14 @@ const Login = () => {
   useEffect(() => {
     const initializeGoogleSignIn = () => {
       if (window.google) {
+        const apiBaseUrl = import.meta.env.VITE_API_URL 
+          ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
+          : 'http://localhost:5000';
+
         window.google.accounts.id.initialize({
           client_id: "403992425264-tp4p2flguojrg091qv2uoob6hph96n2l.apps.googleusercontent.com",
           ux_mode: "redirect",
-          login_uri: "http://localhost:5000/api/auth/google"
+          login_uri: `${apiBaseUrl}/api/auth/google`
         });
         
         window.google.accounts.id.renderButton(
