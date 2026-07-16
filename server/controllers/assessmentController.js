@@ -93,13 +93,19 @@ exports.getAggregateStats = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // 1. Fetch user's latest assessment for this character
-    const userAssessments = await prisma.assessment.findMany({
+    // 1. Fetch user's latest assessment score for this character
+    const userLatestAssessment = await prisma.assessment.findFirst({
       where: { userId, characterId },
-      orderBy: { assessmentDate: 'desc' }
+      orderBy: { assessmentDate: 'desc' },
+      select: { alignmentScore: true }
     });
 
-    const userLatestScore = userAssessments.length > 0 ? userAssessments[0].alignmentScore : null;
+    const userLatestScore = userLatestAssessment ? userLatestAssessment.alignmentScore : null;
+
+    // Fetch user's total assessments count for this character
+    const userTotalAssessments = await prisma.assessment.count({
+      where: { userId, characterId }
+    });
 
     // 2. Compute community average for this character
     const communityAverageResult = await prisma.assessment.aggregate({
@@ -196,7 +202,7 @@ exports.getAggregateStats = async (req, res) => {
 
     res.status(200).json({
       userLatestScore,
-      userTotalAssessments: userAssessments.length,
+      userTotalAssessments,
       communityAverage,
       communityResponseCount,
       distributions: {

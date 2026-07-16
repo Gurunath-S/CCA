@@ -5,7 +5,21 @@ exports.getCharacters = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Fetch global character attributes and user-defined custom attributes
+    // Fetch assessment counts grouped by characterId for this user
+    const counts = await prisma.assessment.groupBy({
+      by: ['characterId'],
+      where: { userId },
+      _count: {
+        id: true
+      }
+    });
+
+    const countMap = {};
+    counts.forEach(item => {
+      countMap[item.characterId] = item._count.id;
+    });
+
+    // Fetch global character attributes and user-defined custom attributes (with only the latest assessment row)
     const attributes = await prisma.characterAttribute.findMany({
       where: {
         OR: [
@@ -17,6 +31,7 @@ exports.getCharacters = async (req, res) => {
         assessments: {
           where: { userId: userId },
           orderBy: { assessmentDate: 'desc' },
+          take: 1,
           select: {
             alignmentScore: true,
             assessmentDate: true
@@ -27,7 +42,7 @@ exports.getCharacters = async (req, res) => {
 
     // Format traits with submission count and latest progress
     const formattedAttributes = attributes.map(attr => {
-      const submissionCount = attr.assessments.length;
+      const submissionCount = countMap[attr.id] || 0;
       const latestAssessment = attr.assessments[0] || null;
       const latestScore = latestAssessment ? latestAssessment.alignmentScore : 0;
 
