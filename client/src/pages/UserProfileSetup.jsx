@@ -36,7 +36,7 @@ const UserProfileSetup = () => {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      await updateProfile(selectedAge || 'Not Specified', user?.profile?.theme || 'Serenity');
+      await updateProfile(selectedAge || 'Not Specified', user?.profile?.theme || 'Classic');
       navigate('/');
     } catch (err) {
       console.error(err);
@@ -48,7 +48,7 @@ const UserProfileSetup = () => {
   const handleSkip = async () => {
     setIsLoading(true);
     try {
-      await updateProfile('Not Specified', user?.profile?.theme || 'Serenity');
+      await updateProfile('Not Specified', user?.profile?.theme || 'Classic');
       navigate('/');
     } catch (err) {
       console.error(err);

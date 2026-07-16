@@ -66,7 +66,7 @@ exports.googleLogin = async (req, res) => {
           picture: userPicture,
           profile: {
             create: {
-              theme: 'Serenity'
+              theme: 'Classic'
             }
           }
         },
@@ -104,7 +104,8 @@ exports.googleLogin = async (req, res) => {
         email: user.email,
         name: user.name,
         picture: user.picture,
-        profile: user.profile
+        profile: user.profile,
+        role: user.role
       }
     });
   } catch (err) {
@@ -200,7 +201,8 @@ exports.getMe = async (req, res) => {
         email: user.email,
         name: user.name,
         picture: user.picture,
-        profile: user.profile
+        profile: user.profile,
+        role: user.role
       }
     });
   } catch (err) {

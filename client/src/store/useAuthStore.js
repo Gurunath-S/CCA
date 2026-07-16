@@ -39,7 +39,7 @@ export const useAuthStore = create((set, get) => {
     console.error('Error parsing user from localStorage', e);
   }
 
-  const initialTheme = savedUser?.profile?.theme || 'Serenity';
+  const initialTheme = savedUser?.profile?.theme || 'Classic';
   syncTailwindDarkMode(initialTheme);
 
   return {
@@ -68,7 +68,7 @@ export const useAuthStore = create((set, get) => {
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
 
-        syncTailwindDarkMode(user.profile?.theme || 'Serenity');
+        syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
         set({
           accessToken,
@@ -100,7 +100,7 @@ export const useAuthStore = create((set, get) => {
 
         const { user } = response.data;
         localStorage.setItem('user', JSON.stringify(user));
-        syncTailwindDarkMode(user.profile?.theme || 'Serenity');
+        syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
         set({
           accessToken,

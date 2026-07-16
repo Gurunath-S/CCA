@@ -33,7 +33,7 @@ const ageGroups = ['15–20', '20–25', '25–30', '30–40', '40–50', '50–
 const Settings = () => {
   const { user, updateProfile, setTheme } = useAuthStore();
   const [selectedAge, setSelectedAge] = useState(user?.profile?.ageGroup || '');
-  const [activeTheme, setActiveTheme] = useState(user?.profile?.theme || 'Serenity');
+  const [activeTheme, setActiveTheme] = useState(user?.profile?.theme || 'Classic');
   const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
