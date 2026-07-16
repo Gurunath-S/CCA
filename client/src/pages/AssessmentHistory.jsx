@@ -20,7 +20,8 @@ import {
   TableRow,
   ToggleButton,
   ToggleButtonGroup,
-  Divider
+  Divider,
+  Skeleton
 } from '@mui/material';
 import {
   Spa as SpaIcon,
@@ -56,8 +57,8 @@ const AssessmentHistory = () => {
   // Timeline view: weekly, monthly, yearly
   const [timeFilter, setTimeFilter] = useState('monthly');
 
-  const userTheme = user?.profile?.theme || 'Serenity';
-  const colors = themePalettes[userTheme]?.chartColors || themePalettes.Serenity.chartColors;
+  const userTheme = user?.profile?.theme || 'Classic';
+  const colors = themePalettes[userTheme]?.chartColors || themePalettes.Classic.chartColors;
 
   useEffect(() => {
     fetchHistory();
@@ -65,9 +66,70 @@ const AssessmentHistory = () => {
 
   if (isLoading && history.length === 0) {
     return (
-      <Box className="flex flex-col items-center justify-center p-12 min-h-[50vh]">
-        <CircularProgress className="text-orange-500" />
-        <Typography className="text-slate-400 mt-3">Loading history dashboard...</Typography>
+      <Box className="space-y-6">
+        {/* Header Skeleton */}
+        <Box className="flex justify-between items-center">
+          <Box className="space-y-2 w-1/3">
+            <Skeleton variant="text" width="80%" height={40} />
+            <Skeleton variant="text" width="60%" height={20} />
+          </Box>
+          <Skeleton variant="rectangular" width={100} height={40} className="rounded-xl" />
+        </Box>
+
+        {/* Charts Row Skeleton */}
+        <Grid container spacing={3}>
+          {/* Main Trend Line Chart Skeleton */}
+          <Grid item xs={12} md={8}>
+            <Card className="p-6">
+              <Box className="flex justify-between items-center mb-4">
+                <Skeleton variant="text" width="30%" height={25} />
+                <Skeleton variant="rectangular" width={120} height={30} className="rounded-lg" />
+              </Box>
+              <Skeleton variant="rectangular" height={300} className="rounded-2xl" />
+            </Card>
+          </Grid>
+
+          {/* Side distribution chart skeleton */}
+          <Grid item xs={12} md={4}>
+            <Card className="p-6 h-full flex flex-col justify-between">
+              <Skeleton variant="text" width="60%" height={25} className="mb-4" />
+              <Skeleton variant="rectangular" height={220} className="rounded-2xl" />
+              <Skeleton variant="text" width="80%" height={20} className="mt-4" />
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Logs Table Skeleton */}
+        <Card className="p-6">
+          <Box className="flex justify-between items-center mb-4">
+            <Skeleton variant="text" width="20%" height={25} />
+            <Skeleton variant="rectangular" width={180} height={35} className="rounded-xl" />
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <TableCell key={idx}>
+                      <Skeleton variant="text" width="60%" height={20} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.from({ length: 4 }).map((_, rowIdx) => (
+                  <TableRow key={rowIdx}>
+                    <TableCell><Skeleton variant="text" width="40%" height={20} /></TableCell>
+                    <TableCell><Skeleton variant="text" width="60%" height={20} /></TableCell>
+                    <TableCell><Skeleton variant="rectangular" width={40} height={20} className="rounded" /></TableCell>
+                    <TableCell><Skeleton variant="text" width="70%" height={20} /></TableCell>
+                    <TableCell><Skeleton variant="text" width="50%" height={20} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
       </Box>
     );
   }

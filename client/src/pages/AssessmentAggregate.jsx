@@ -13,7 +13,8 @@ import {
   CircularProgress,
   Paper,
   Divider,
-  Alert
+  Alert,
+  Skeleton
 } from '@mui/material';
 import {
   Spa as SpaIcon,
@@ -45,8 +46,8 @@ const AssessmentAggregate = () => {
   const [selectedChar, setSelectedChar] = useState(null);
 
   // Fetch active theme color palette for charts
-  const userTheme = user?.profile?.theme || 'Serenity';
-  const colors = themePalettes[userTheme]?.chartColors || themePalettes.Serenity.chartColors;
+  const userTheme = user?.profile?.theme || 'Classic';
+  const colors = themePalettes[userTheme]?.chartColors || themePalettes.Classic.chartColors;
 
   useEffect(() => {
     if (characters.length === 0) {
@@ -62,9 +63,50 @@ const AssessmentAggregate = () => {
 
   if (isLoading || !selectedCharacterStats || !selectedChar) {
     return (
-      <Box className="flex flex-col items-center justify-center p-12 min-h-[50vh]">
-        <CircularProgress className="text-orange-500" />
-        <Typography className="text-slate-400 mt-3">Loading aggregate comparison charts...</Typography>
+      <Box className="space-y-6">
+        {/* Header Skeleton */}
+        <Box className="flex justify-between items-center">
+          <Box className="space-y-2 w-1/3">
+            <Skeleton variant="text" width="80%" height={40} />
+            <Skeleton variant="text" width="60%" height={20} />
+          </Box>
+          <Box className="flex gap-2">
+            <Skeleton variant="rectangular" width={100} height={40} className="rounded-xl" />
+            <Skeleton variant="rectangular" width={120} height={40} className="rounded-xl" />
+          </Box>
+        </Box>
+
+        {/* 4 Stats Cards Skeleton Row */}
+        <Grid container spacing={3}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <Card className="p-6 flex flex-col items-center justify-center space-y-2">
+                <Skeleton variant="text" width="60%" height={20} />
+                <Skeleton variant="text" width="40%" height={60} />
+                <Skeleton variant="text" width="80%" height={15} />
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* Charts Row Skeletons */}
+        <Grid container spacing={3}>
+          {/* Chart 1 Skeleton */}
+          <Grid item xs={12} md={6}>
+            <Card className="p-6">
+              <Skeleton variant="text" width="50%" height={25} className="mb-4" />
+              <Skeleton variant="rectangular" height={300} className="rounded-2xl" />
+            </Card>
+          </Grid>
+
+          {/* Chart 2 Skeleton */}
+          <Grid item xs={12} md={6}>
+            <Card className="p-6">
+              <Skeleton variant="text" width="50%" height={25} className="mb-4" />
+              <Skeleton variant="rectangular" height={300} className="rounded-2xl" />
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
     );
   }
@@ -92,6 +134,14 @@ const AssessmentAggregate = () => {
       );
     }
     return null;
+  };
+
+  const formatFrequencyLabel = (val) => {
+    if (!val) return '';
+    if (val === '1 - 5 times') return '1-5 times';
+    if (val === 'More than 5 times') return '5+ times';
+    if (val.includes('Didn’t') || val.includes("Didn't")) return 'None';
+    return val;
   };
 
   return (
@@ -212,7 +262,11 @@ const AssessmentAggregate = () => {
                     <XAxis dataKey="score" tickLine={false} />
                     <YAxis allowDecimals={false} tickLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" fill={colors[0] || '#2563eb'} radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                      {distributions.alignment.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
@@ -301,10 +355,14 @@ const AssessmentAggregate = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={distributions.frequency}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                    <XAxis dataKey="option" tickLine={false} tickFormatter={(val) => val.split(' ')[0]} />
+                    <XAxis dataKey="option" tickLine={false} tickFormatter={formatFrequencyLabel} />
                     <YAxis allowDecimals={false} tickLine={false} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" fill={colors[1] || '#10b981'} radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                      {distributions.frequency.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={colors[(index + 2) % colors.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </Box>

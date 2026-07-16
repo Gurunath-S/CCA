@@ -282,7 +282,13 @@ const CharacterListing = () => {
       )}
 
       {/* Create Custom Attribute Modal */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        container={() => document.getElementById('root')}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle className="font-serif font-bold">Add Custom Character Attribute</DialogTitle>
         <DialogContent className="space-y-4 pt-2">
           {dialogError && (

@@ -20,7 +20,8 @@ import {
   ListItemText,
   Chip,
   Paper,
-  Divider
+  Divider,
+  Skeleton
 } from '@mui/material';
 import {
   Spa as SpaIcon,
@@ -50,8 +51,8 @@ const Dashboard = () => {
 
   const [quickStartId, setQuickStartId] = useState('');
 
-  const userTheme = user?.profile?.theme || 'Serenity';
-  const colors = themePalettes[userTheme]?.chartColors || themePalettes.Serenity.chartColors;
+  const userTheme = user?.profile?.theme || 'Classic';
+  const colors = themePalettes[userTheme]?.chartColors || themePalettes.Classic.chartColors;
 
   useEffect(() => {
     fetchCharacters();
@@ -61,9 +62,81 @@ const Dashboard = () => {
   // Loading indicator on first load
   if (isLoading && history.length === 0 && characters.length === 0) {
     return (
-      <Box className="flex flex-col items-center justify-center p-12 min-h-[60vh]">
-        <CircularProgress className="text-orange-500" />
-        <Typography className="text-slate-400 mt-3">Loading your dashboard...</Typography>
+      <Box className="space-y-6">
+        {/* Welcome Banner Skeleton */}
+        <Box className="p-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 relative overflow-hidden">
+          <Skeleton variant="text" width="40%" height={40} className="mb-2" />
+          <Skeleton variant="text" width="60%" height={24} />
+        </Box>
+
+        {/* Stats Cards Grid Skeleton */}
+        <Grid container spacing={3}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Grid item xs={12} sm={4} key={i}>
+              <Card className="p-6">
+                <Box className="flex justify-between items-center">
+                  <Box className="space-y-2 w-2/3">
+                    <Skeleton variant="text" width="60%" height={20} />
+                    <Skeleton variant="text" width="40%" height={40} />
+                  </Box>
+                  <Skeleton variant="rectangular" width={48} height={48} className="rounded-2xl" />
+                </Box>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* Main Grid Content Skeleton */}
+        <Grid container spacing={3}>
+          {/* Progress Chart Skeleton */}
+          <Grid item xs={12} lg={8}>
+            <Card className="p-6 h-full">
+              <Box className="flex justify-between items-center mb-4">
+                <Skeleton variant="text" width="30%" height={25} />
+                <Skeleton variant="text" width="15%" height={25} />
+              </Box>
+              <Skeleton variant="rectangular" height={250} className="rounded-2xl" />
+            </Card>
+          </Grid>
+
+          {/* Quick Start & Improving skeletons */}
+          <Grid item xs={12} lg={4}>
+            <Box className="space-y-6 h-full flex flex-col justify-between">
+              <Card className="p-6 space-y-4">
+                <Skeleton variant="text" width="60%" height={25} />
+                <Skeleton variant="rectangular" height={40} className="rounded-xl" />
+                <Skeleton variant="rectangular" height={40} className="rounded-xl" />
+              </Card>
+              <Card className="p-6 flex-grow">
+                <Skeleton variant="text" width="50%" height={25} className="mb-3" />
+                <Box className="space-y-3">
+                  {Array.from({ length: 2 }).map((_, idx) => (
+                    <Box key={idx} className="p-3 border border-slate-100 dark:border-slate-800 rounded-2xl flex justify-between items-center bg-white/50">
+                      <Skeleton variant="text" width="40%" height={20} />
+                      <Skeleton variant="rectangular" width={40} height={20} className="rounded-lg" />
+                    </Box>
+                  ))}
+                </Box>
+              </Card>
+            </Box>
+          </Grid>
+        </Grid>
+
+        {/* Recent Activity Logs Skeleton */}
+        <Card className="p-6">
+          <Skeleton variant="text" width="20%" height={25} className="mb-3" />
+          <Box className="space-y-3">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <Box key={idx} className="py-3 flex justify-between items-center border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+                <Box className="space-y-1 w-2/3">
+                  <Skeleton variant="text" width="40%" height={20} />
+                  <Skeleton variant="text" width="60%" height={15} />
+                </Box>
+                <Skeleton variant="rectangular" width={60} height={24} className="rounded-lg" />
+              </Box>
+            ))}
+          </Box>
+        </Card>
       </Box>
     );
   }

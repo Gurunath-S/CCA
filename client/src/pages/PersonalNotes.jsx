@@ -16,11 +16,15 @@ import {
   IconButton,
   CircularProgress,
   Divider,
+  Skeleton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  ListSubheader
+  ListSubheader,
+  FormControl,
+  Select,
+  MenuItem
 } from '@mui/material';
 import {
   NoteAdd as NoteIcon,
@@ -28,7 +32,8 @@ import {
   Delete as DeleteIcon,
   Save as SaveIcon,
   Close as CancelIcon,
-  Book as JournalIcon
+  Book as JournalIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,6 +45,21 @@ const PersonalNotes = () => {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [noteToDelete, setNoteToDelete] = useState(null);
+
+  // Filters & Search for sidebar and history
+  const [charSearch, setCharSearch] = useState('');
+  const [charCategory, setCharCategory] = useState('All');
+  const [noteSearch, setNoteSearch] = useState('');
+
+  const filteredSidebarChars = characters.filter((c) => {
+    const matchesSearch = c.name.toLowerCase().includes(charSearch.toLowerCase());
+    const matchesCategory = charCategory === 'All' || c.category === charCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const filteredNotes = notes.filter((note) => {
+    return note.content.toLowerCase().includes(noteSearch.toLowerCase());
+  });
 
   useEffect(() => {
     fetchCharacters();
@@ -124,35 +144,83 @@ const PersonalNotes = () => {
             <ListSubheader className="bg-transparent font-bold py-3 text-slate-700 dark:text-slate-350 border-b border-slate-150 dark:border-slate-800">
               Select Character Trait
             </ListSubheader>
+
+            {/* Search & Category Filter for Sidebar */}
+            <Box className="p-3 space-y-2 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search traits..."
+                value={charSearch}
+                onChange={(e) => setCharSearch(e.target.value)}
+                slotProps={{
+                  input: {
+                    className: 'rounded-xl text-xs bg-white dark:bg-slate-800',
+                    startAdornment: <SearchIcon className="text-slate-400 mr-1.5" sx={{ fontSize: 16 }} />
+                  }
+                }}
+              />
+              <FormControl size="small" fullWidth>
+                <Select
+                  value={charCategory}
+                  onChange={(e) => setCharCategory(e.target.value)}
+                  className="rounded-xl text-xs bg-white dark:bg-slate-800"
+                >
+                  <MenuItem value="All" className="text-xs">All Categories</MenuItem>
+                  <MenuItem value="Yama" className="text-xs">Yama</MenuItem>
+                  <MenuItem value="Niyama" className="text-xs">Niyama</MenuItem>
+                  <MenuItem value="General" className="text-xs">General</MenuItem>
+                  <MenuItem value="Custom" className="text-xs">Custom</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
             <Box className="flex-grow overflow-y-auto">
-              <List disablePadding>
-                {characters.map((c) => {
-                  const isSelected = selectedCharId === c.id;
-                  return (
-                    <ListItem key={c.id} disablePadding>
-                      <ListItemButton
-                        selected={isSelected}
-                        onClick={() => {
-                          setSelectedCharId(c.id);
-                          setEditingNoteId(null);
-                        }}
-                        className={`py-3 transition-colors border-l-4 ${
-                          isSelected
-                            ? 'bg-orange-500/5 text-orange-600 dark:text-orange-400 border-orange-500 font-semibold'
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-850 border-transparent text-slate-600 dark:text-slate-300'
-                        }`}
-                      >
-                        <ListItemText
-                          primary={c.name.split(' (')[0]}
-                          secondary={c.category}
-                          primaryTypographyProps={{ className: 'text-sm font-semibold truncate' }}
-                          secondaryTypographyProps={{ className: 'text-xs text-slate-400' }}
-                        />
-                      </ListItemButton>
+              {isLoading && characters.length === 0 ? (
+                <List disablePadding>
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <ListItem key={idx} className="py-3 px-4 border-b border-slate-100 dark:border-slate-800">
+                      <ListItemText
+                        primary={<Skeleton variant="text" width="60%" height={20} />}
+                        secondary={<Skeleton variant="text" width="40%" height={15} />}
+                      />
                     </ListItem>
-                  );
-                })}
-              </List>
+                  ))}
+                </List>
+              ) : filteredSidebarChars.length === 0 ? (
+                <Box className="p-4 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  No traits found.
+                </Box>
+              ) : (
+                <List disablePadding>
+                  {filteredSidebarChars.map((c) => {
+                    const isSelected = selectedCharId === c.id;
+                    return (
+                      <ListItem key={c.id} disablePadding>
+                        <ListItemButton
+                          selected={isSelected}
+                          onClick={() => {
+                            setSelectedCharId(c.id);
+                            setEditingNoteId(null);
+                          }}
+                          className={`py-3 transition-colors border-l-4 ${
+                            isSelected
+                              ? 'bg-orange-500/5 text-orange-600 dark:text-orange-400 border-orange-500 font-semibold'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-850 border-transparent text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
+                          <ListItemText
+                            primary={c.name.split(' (')[0]}
+                            secondary={c.category}
+                            primaryTypographyProps={{ className: 'text-sm font-semibold truncate' }}
+                            secondaryTypographyProps={{ className: 'text-xs text-slate-400' }}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              )}
             </Box>
           </Card>
         </Grid>
@@ -195,14 +263,44 @@ const PersonalNotes = () => {
             {/* Notes List Panel */}
             <Card className="flex-grow overflow-y-auto">
               <CardContent className="p-6">
-                <Typography variant="h6" className="font-semibold mb-4 border-b border-slate-100 dark:border-slate-850 pb-2">
-                  Reflection History
-                </Typography>
+                <Box className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-100 dark:border-slate-850 pb-3">
+                  <Typography variant="h6" className="font-semibold">
+                    Reflection History
+                  </Typography>
+
+                  {/* Search reflections */}
+                  {notes.length > 0 && (
+                    <TextField
+                      size="small"
+                      placeholder="Search reflections..."
+                      value={noteSearch}
+                      onChange={(e) => setNoteSearch(e.target.value)}
+                      className="min-w-[200px]"
+                      slotProps={{
+                        input: {
+                          className: 'rounded-xl text-xs bg-slate-50/50 dark:bg-slate-800/30',
+                          startAdornment: <SearchIcon className="text-slate-400 mr-1.5" sx={{ fontSize: 16 }} />
+                        }
+                      }}
+                    />
+                  )}
+                </Box>
 
                 {isLoading && notes.length === 0 ? (
-                  <Box className="flex flex-col items-center justify-center p-8">
-                    <CircularProgress size={30} className="text-orange-500" />
-                    <Typography variant="caption" className="text-slate-400 mt-2">Loading notes...</Typography>
+                  <Box className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, idx) => (
+                      <Paper key={idx} className="p-5 border border-slate-100 dark:border-slate-800 rounded-2xl bg-white/40 dark:bg-slate-900/40">
+                        <Box className="flex justify-between items-center mb-3">
+                          <Skeleton variant="text" width="25%" height={20} />
+                          <Box className="flex gap-2">
+                            <Skeleton variant="circular" width={24} height={24} />
+                            <Skeleton variant="circular" width={24} height={24} />
+                          </Box>
+                        </Box>
+                        <Skeleton variant="text" width="90%" height={20} />
+                        <Skeleton variant="text" width="60%" height={20} />
+                      </Paper>
+                    ))}
                   </Box>
                 ) : notes.length === 0 ? (
                   <Box className="flex flex-col items-center justify-center py-12 text-slate-400">
@@ -210,10 +308,14 @@ const PersonalNotes = () => {
                     <Typography variant="body2">No reflections recorded for this character yet.</Typography>
                     <Typography variant="caption" className="text-slate-400 mt-1">Write your first note above.</Typography>
                   </Box>
+                ) : filteredNotes.length === 0 ? (
+                  <Box className="flex flex-col items-center justify-center py-12 text-slate-400">
+                    <Typography variant="body2">No matching reflections found.</Typography>
+                  </Box>
                 ) : (
                   <Box className="space-y-4">
                     <AnimatePresence>
-                      {notes.map((note) => {
+                      {filteredNotes.map((note) => {
                         const isEditing = editingNoteId === note.id;
                         return (
                           <motion.div
@@ -304,7 +406,11 @@ const PersonalNotes = () => {
       </Grid>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!noteToDelete} onClose={() => setNoteToDelete(null)}>
+      <Dialog
+        open={!!noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        container={() => document.getElementById('root')}
+      >
         <DialogTitle className="font-serif font-bold">Delete Reflection Note?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" className="text-slate-500">
