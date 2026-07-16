@@ -28,7 +28,8 @@ import {
   Settings as SettingsIcon,
   ExitToApp as LogoutIcon,
   Spa as SpaIcon,
-  Book as JournalIcon
+  Book as JournalIcon,
+  AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
@@ -60,6 +61,10 @@ const MainLayout = ({ children }) => {
     { text: 'Help Section', path: '/help', icon: <HelpIcon /> },
     { text: 'Settings', path: '/settings', icon: <SettingsIcon /> },
   ];
+
+  if (user?.role === 'ADMIN') {
+    navItems.push({ text: 'Admin Panel', path: '/admin', icon: <AdminIcon /> });
+  }
 
   const drawerContent = (
     <Box className="h-full flex flex-col justify-between theme-transition text-slate-100/90">
