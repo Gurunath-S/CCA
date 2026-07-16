@@ -40,7 +40,7 @@ function App() {
       <CssBaseline />
       <Router>
         <Suspense fallback={
-          <Box className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+          <Box className="flex flex-col items-center justify-center min-h-screen bg-themeBg theme-transition">
             <CircularProgress className="text-orange-500" />
           </Box>
         }>
