@@ -98,7 +98,7 @@ const Login = () => {
     <Box 
       className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-slate-950"
       style={{
-        backgroundImage: `url('/image.png')`,
+        backgroundImage: `url('/image_optimized.webp')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
@@ -109,14 +109,15 @@ const Login = () => {
         loop
         muted
         playsInline
-        poster="/image.png"
+        preload="metadata"
+        poster="/image_optimized.webp"
         className="absolute inset-0 w-full h-full object-cover z-0"
         style={{
           willChange: 'transform',
           transform: 'translate3d(0, 0, 0)'
         }}
       >
-        <source src="/19609-303404131_medium.mp4" type="video/mp4" />
+        <source src="/background_optimized.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
 
