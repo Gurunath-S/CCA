@@ -21,7 +21,8 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Fab
+  Fab,
+  Paper
 } from '@mui/material';
 import {
   Search as SearchIcon,
