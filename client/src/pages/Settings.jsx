@@ -24,7 +24,7 @@ const themes = [
   { name: 'Serenity', desc: 'Calm light blue, minimal', colors: ['#2563eb', '#3b82f6', '#f8fafc'] },
   { name: 'Midnight Focus', desc: 'Sleek dark navy focus', colors: ['#60a5fa', '#1e293b', '#0f172a'] },
   { name: 'Nature', desc: 'Relaxing green balance', colors: ['#059669', '#10b981', '#f0fdf4'] },
-  { name: 'Classic', desc: 'Gold, cream & warm brown', colors: ['#b45309', '#d97706', '#fafaf9'] },
+  { name: 'Classic', desc: 'Gold, cream & warm brown', colors: ['#b45309', '#d97706', '#fffbeb'] },
   { name: 'Vivekananda', desc: 'Saffron energy & deep blue', colors: ['#f97316', '#1e3a8a', '#fffbeb'] },
 ];
 

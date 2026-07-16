@@ -33,7 +33,7 @@ export const themePalettes = {
     mode: 'light',
     primary: { main: '#b45309', light: '#d97706', dark: '#78350f' }, // Cream, brown, gold
     secondary: { main: '#854d0e', light: '#ca8a04', dark: '#713f12' },
-    background: { default: '#fafaf9', paper: '#f5f5f4' },
+    background: { default: '#fffbeb', paper: '#ffffff' },
     text: { primary: '#1c1917', secondary: '#57534e' },
     divider: 'rgba(0, 0, 0, 0.08)',
     chartColors: ['#b45309', '#d97706', '#ca8a04', '#eab308', '#78350f'],
