@@ -70,6 +70,177 @@ async function main() {
       });
     }
   }
+
+  // Seed data for gururider35@gmail.com
+  const testEmail = 'gururider35@gmail.com';
+  console.log(`Seeding user data for ${testEmail}...`);
+  let user = await prisma.user.findUnique({
+    where: { email: testEmail }
+  });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: testEmail,
+        name: 'Guru Rider',
+        picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+        role: 'ADMIN',
+        profile: {
+          create: {
+            theme: 'Classic',
+            ageGroup: '25–30'
+          }
+        }
+      }
+    });
+  } else {
+    // Make sure user role is set to ADMIN
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { role: 'ADMIN' }
+    });
+
+    // Ensure profile exists
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: user.id }
+    });
+    if (!profile) {
+      await prisma.userProfile.create({
+        data: {
+          userId: user.id,
+          theme: 'Classic',
+          ageGroup: '25–30'
+        }
+      });
+    }
+  }
+
+  // Fetch predefined attributes
+  const dbAttributes = await prisma.characterAttribute.findMany({
+    where: { userId: null }
+  });
+
+  if (dbAttributes.length > 0) {
+    console.log('Cleaning up existing assessments and notes for test user...');
+    await prisma.assessment.deleteMany({
+      where: { userId: user.id }
+    });
+    await prisma.personalNote.deleteMany({
+      where: { userId: user.id }
+    });
+
+    const mockAssessments = [
+      {
+        attrName: 'Cleanliness (Saucha - Niyama)',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Kept my working desk and room completely organized this week. Felt very peaceful.',
+        daysAgo: 4
+      },
+      {
+        attrName: 'Cleanliness (Saucha - Niyama)',
+        alignmentScore: 3,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Felt a bit lazy mid-week but cleaned up by Friday.',
+        daysAgo: 10
+      },
+      {
+        attrName: 'Courage',
+        alignmentScore: 5,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Spoke up in the meeting and presented my ideas clearly. Others appreciated my clarity.',
+        daysAgo: 2
+      },
+      {
+        attrName: 'Truthfulness (Satya - Yama)',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Was honest about a project delay instead of giving an excuse.',
+        daysAgo: 5
+      },
+      {
+        attrName: 'Patience',
+        alignmentScore: 2,
+        othersRecognize: 'No - Not at all',
+        consciousEffort: false,
+        effortLevel: 'I am aware of this trait in my action but hard to practice',
+        practiceFrequency: 'Didn’t get to practice this',
+        personalNote: 'Lost temper in traffic on Monday. Need to consciously breathe and stay calm.',
+        daysAgo: 7
+      },
+      {
+        attrName: 'Sense of Discipline (Tapas - Niyama)',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Stuck to my morning routine for 4 out of 5 days.',
+        daysAgo: 3
+      },
+      {
+        attrName: 'Determination',
+        alignmentScore: 5,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Completed the task on time despite the complex issues.',
+        daysAgo: 1
+      }
+    ];
+
+    for (const mock of mockAssessments) {
+      const attribute = dbAttributes.find(a => a.name === mock.attrName);
+      if (attribute) {
+        const date = new Date();
+        date.setDate(date.getDate() - mock.daysAgo);
+
+        // Create assessment
+        await prisma.assessment.create({
+          data: {
+            userId: user.id,
+            characterId: attribute.id,
+            assessmentDate: date,
+            alignmentScore: mock.alignmentScore,
+            othersRecognize: mock.othersRecognize,
+            consciousEffort: mock.consciousEffort,
+            effortLevel: mock.effortLevel,
+            practiceFrequency: mock.practiceFrequency,
+            personalNote: mock.personalNote
+          }
+        });
+
+        // Create personal note
+        if (mock.personalNote) {
+          await prisma.personalNote.create({
+            data: {
+              userId: user.id,
+              characterId: attribute.id,
+              content: mock.personalNote,
+              createdAt: date,
+              updatedAt: date
+            }
+          });
+        }
+      } else {
+        console.warn(`Could not find attribute named: ${mock.attrName}`);
+      }
+    }
+  }
+
   console.log('Database seeded successfully!');
 }
 

@@ -19,6 +19,7 @@ model User {
   assessments        Assessment[]
   notes              PersonalNote[]
   refreshTokens      RefreshToken[]
+  role               String               @default("USER")
 }
 
 model UserProfile {
@@ -26,7 +27,7 @@ model UserProfile {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   ageGroup  String?  // Options: "15–20", "20–25", "25–30", "30–40", "40–50", "50–60", "Above 60"
-  theme     String   @default("Serenity") // Options: "Serenity", "Midnight Focus", "Nature", "Classic", "Vivekananda"
+  theme     String   @default("Classic") // Options: "Serenity", "Midnight Focus", "Nature", "Classic", "Vivekananda"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -62,6 +63,8 @@ model Assessment {
   personalNote      String?            @db.Text
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  @@index([userId, characterId])
+  @@index([assessmentDate])
 }
 
 model PersonalNote {
@@ -73,6 +76,7 @@ model PersonalNote {
   content     String             @db.Text
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  @@index([userId, characterId])
 }
 
 model RefreshToken {
