@@ -7,6 +7,7 @@ const profileRoutes = require('./routes/profileRoutes');
 const characterRoutes = require('./routes/characterRoutes');
 const assessmentRoutes = require('./routes/assessmentRoutes');
 const noteRoutes = require('./routes/noteRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,6 +35,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/characters', characterRoutes);
 app.use('/api/assessments', assessmentRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 Route handler
 app.use((req, res, next) => {
