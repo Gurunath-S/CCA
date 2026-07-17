@@ -436,6 +436,7 @@ const Dashboard = () => {
         <Grid item xs={12} lg={4}>
           <Box className="space-y-6 h-full flex flex-col justify-between">
             {/* Quick Start Card */}
+            <motion.div variants={fadeUp} custom={4} initial="hidden" animate="visible">
             <Card>
               <CardContent className="p-6 space-y-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
@@ -470,8 +471,10 @@ const Dashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+            </motion.div>
 
             {/* Improving Traits Card */}
+            <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible" style={{ flexGrow: 1 }}>
             <Card className="flex-grow">
               <CardContent className="p-6">
                 <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
@@ -503,12 +506,13 @@ const Dashboard = () => {
                 )}
               </CardContent>
             </Card>
+            </motion.div>
           </Box>
         </Grid>
       </Grid>
 
       {/* Recent Activity Logs */}
-      <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible">
+      <motion.div variants={fadeUp} custom={6} initial="hidden" animate="visible">
       <Card>
         <CardContent className="p-6">
           <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
