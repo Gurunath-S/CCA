@@ -21,7 +21,8 @@ import {
   Chip,
   Paper,
   Divider,
-  Skeleton
+  Skeleton,
+  Alert
 } from '@mui/material';
 import {
   Spa as SpaIcon,
@@ -45,7 +46,7 @@ import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 
 const Dashboard = () => {
-  const { characters, history, fetchCharacters, fetchHistory, isLoading } = useCharacterStore();
+  const { characters, history, fetchCharacters, fetchHistory, isLoading, error } = useCharacterStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -264,6 +265,12 @@ const Dashboard = () => {
           </Box>
         </Box>
       </Card>
+
+      {error && (
+        <Alert severity="error" className="rounded-xl shadow-sm border border-red-200/50 dark:border-red-900/30">
+          {error}
+        </Alert>
+      )}
 
       {/* Stats Cards Grid */}
       <Grid container spacing={3}>

@@ -22,7 +22,8 @@ import {
   FormControl,
   InputLabel,
   Fab,
-  Paper
+  Paper,
+  Alert
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,7 +35,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CharacterListing = () => {
-  const { characters, fetchCharacters, createCustomCharacter, isLoading } = useCharacterStore();
+  const { characters, fetchCharacters, createCustomCharacter, isLoading, error } = useCharacterStore();
   const navigate = useNavigate();
 
   // Search & Filter state
@@ -158,6 +159,12 @@ const CharacterListing = () => {
           </Box>
         </CardContent>
       </Card>
+
+      {error && (
+        <Alert severity="error" className="rounded-xl shadow-sm border border-red-200/50 dark:border-red-900/30">
+          {error}
+        </Alert>
+      )}
 
       {/* Attributes Grid */}
       {isLoading && characters.length === 0 ? (
