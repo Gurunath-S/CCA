@@ -33,23 +33,23 @@ import { motion } from 'framer-motion';
 const assessmentSchema = z.object({
   assessmentDate: z.string().min(1, 'Assessment date is required'),
   alignmentScore: z.number().min(1).max(5),
-  othersRecognize: z.enum([
+  othersRecognize: z.string().min(1, 'Please select an option').refine(val => [
     'Yes - Regularly',
     'Yes - Sometimes',
     'No - Not at all',
     'Others remind me for not having this trait'
-  ], { required_error: 'Please select an option' }),
-  consciousEffort: z.enum(['Yes', 'No'], { required_error: 'Please select an option' }),
-  effortLevel: z.enum([
+  ].includes(val), 'Invalid option selected'),
+  consciousEffort: z.string().min(1, 'Please select an option').refine(val => ['Yes', 'No'].includes(val), 'Invalid option selected'),
+  effortLevel: z.string().min(1, 'Please select an option').refine(val => [
     'I am aware of this trait in my action but hard to practice',
     'I catch myself for not following this and make effort to correct',
     'I am able to practice this without lot of effort'
-  ], { required_error: 'Please select an option' }),
-  practiceFrequency: z.enum([
+  ].includes(val), 'Invalid option selected'),
+  practiceFrequency: z.string().min(1, 'Please select an option').refine(val => [
     'Didn’t get to practice this',
     '1 - 5 times',
     'More than 5 times'
-  ], { required_error: 'Please select an option' }),
+  ].includes(val), 'Invalid option selected'),
   personalNote: z.string().max(1000, 'Note should not exceed 1000 characters').optional()
 });
 
@@ -82,10 +82,10 @@ const AssessmentForm = () => {
     defaultValues: {
       assessmentDate: new Date().toISOString().split('T')[0], // yyyy-mm-dd format
       alignmentScore: 3,
-      othersRecognize: 'Yes - Sometimes',
-      consciousEffort: 'Yes',
-      effortLevel: 'I catch myself for not following this and make effort to correct',
-      practiceFrequency: '1 - 5 times',
+      othersRecognize: '',
+      consciousEffort: '',
+      effortLevel: '',
+      practiceFrequency: '',
       personalNote: ''
     }
   });
