@@ -153,6 +153,7 @@ const AssessmentHistory = () => {
     .reverse() // Make it chronological (oldest to newest)
     .map(item => ({
       date: dayjs(item.assessmentDate).format('MMM DD'),
+      fullDate: dayjs(item.assessmentDate),
       score: item.alignmentScore,
       character: item.character.name.split(' (')[0] // shorten name
     }));
@@ -166,9 +167,7 @@ const AssessmentHistory = () => {
     else cutoff = now.subtract(1, 'year');
 
     return lineChartData.filter(item => {
-      // Parse dayjs date and check if it falls within the range
-      const itemDate = dayjs(item.date, 'MMM DD');
-      return itemDate.isAfter(cutoff) || timeFilter === 'yearly';
+      return item.fullDate.isAfter(cutoff) || timeFilter === 'yearly';
     });
   };
 
