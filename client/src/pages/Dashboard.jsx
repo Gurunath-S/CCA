@@ -43,21 +43,29 @@ import {
   Tooltip
 } from 'recharts';
 import dayjs from 'dayjs';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
-// Reusable animation variants
+// Reusable animation variants — shorter duration for low-end device friendliness
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.45, delay: i * 0.1, ease: 'easeOut' } })
+  hidden: { opacity: 0, y: 18 },
+  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.35, delay: i * 0.08, ease: 'easeOut' } })
 };
 const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } }
+  visible: { transition: { staggerChildren: 0.06 } }
 };
 
 const Dashboard = () => {
   const { characters, history, fetchCharacters, fetchHistory, isLoading, error } = useCharacterStore();
   const { user } = useAuthStore();
+  const shouldReduceMotion = useReducedMotion();
+
+  // If device prefers reduced motion (accessibility / low-end), skip all animations
+  const motionProps = (custom) => shouldReduceMotion
+    ? {}
+    : { variants: fadeUp, custom, initial: 'hidden', animate: 'visible' };
+  const containerMotionProps = shouldReduceMotion ? {} : { variants: staggerContainer, initial: 'hidden', animate: 'visible' };
+  const chartAnimProps = shouldReduceMotion ? { isAnimationActive: false } : { isAnimationActive: true, animationBegin: 150, animationDuration: 800, animationEasing: 'ease-out' };
   const navigate = useNavigate();
 
   const [quickStartId, setQuickStartId] = useState('');
@@ -422,10 +430,7 @@ const Dashboard = () => {
                         strokeWidth={3}
                         fillOpacity={1}
                         fill="url(#colorScore)"
-                        isAnimationActive={true}
-                        animationBegin={200}
-                        animationDuration={1200}
-                        animationEasing="ease-out"
+                        {...chartAnimProps}
                       />
                     </AreaChart>
                   </ResponsiveContainer>

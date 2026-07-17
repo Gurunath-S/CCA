@@ -54,16 +54,20 @@ import {
   Bar
 } from 'recharts';
 import dayjs from 'dayjs';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.45, delay: i * 0.1, ease: 'easeOut' } })
+  hidden: { opacity: 0, y: 18 },
+  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.35, delay: i * 0.08, ease: 'easeOut' } })
 };
 
 const AssessmentHistory = () => {
   const { history, fetchHistory, isLoading } = useCharacterStore();
   const { user } = useAuthStore();
+  const shouldReduceMotion = useReducedMotion();
+  const chartAnimProps = shouldReduceMotion
+    ? { isAnimationActive: false }
+    : { isAnimationActive: true, animationBegin: 150, animationDuration: 800, animationEasing: 'ease-out' };
   
   // Timeline view: weekly, monthly, yearly (default to weekly / last 7 days)
   const [timeFilter, setTimeFilter] = useState('weekly');
@@ -344,10 +348,7 @@ const AssessmentHistory = () => {
                         stroke={colors[0] || '#2563eb'}
                         strokeWidth={3}
                         activeDot={{ r: 8 }}
-                        isAnimationActive={true}
-                        animationBegin={300}
-                        animationDuration={1400}
-                        animationEasing="ease-out"
+                        {...chartAnimProps}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -382,10 +383,7 @@ const AssessmentHistory = () => {
                           stroke={colors[1] || '#10b981'}
                           fill={colors[1] || '#10b981'}
                           fillOpacity={0.25}
-                          isAnimationActive={true}
-                          animationBegin={200}
-                          animationDuration={1200}
-                          animationEasing="ease-out"
+                          {...chartAnimProps}
                         />
                       </RadarChart>
                     </ResponsiveContainer>
@@ -412,8 +410,8 @@ const AssessmentHistory = () => {
                       <YAxis domain={[0, 5]} tickLine={false} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="Initial Score" fill={colors[2] || '#94a3b8'} radius={[4, 4, 0, 0]} isAnimationActive={true} animationBegin={200} animationDuration={1000} animationEasing="ease-out" />
-                      <Bar dataKey="Latest Score" fill={colors[0] || '#2563eb'} radius={[4, 4, 0, 0]} isAnimationActive={true} animationBegin={400} animationDuration={1000} animationEasing="ease-out" />
+                      <Bar dataKey="Initial Score" fill={colors[2] || '#94a3b8'} radius={[4, 4, 0, 0]} {...chartAnimProps} />
+                      <Bar dataKey="Latest Score" fill={colors[0] || '#2563eb'} radius={[4, 4, 0, 0]} {...chartAnimProps} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
