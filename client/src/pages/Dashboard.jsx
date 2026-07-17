@@ -64,10 +64,10 @@ const Dashboard = () => {
     return (
       <Box className="space-y-6">
         {/* Welcome Banner Skeleton */}
-        <Box className="p-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 relative overflow-hidden">
+        <Card className="p-8 rounded-3xl relative overflow-hidden">
           <Skeleton variant="text" width="40%" height={40} className="mb-2" />
           <Skeleton variant="text" width="60%" height={24} />
-        </Box>
+        </Card>
 
         {/* Stats Cards Grid Skeleton */}
         <Grid container spacing={3}>
@@ -242,7 +242,7 @@ const Dashboard = () => {
   return (
     <Box className="space-y-6">
       {/* Welcome Banner */}
-      <Box className="bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5 p-6 sm:p-8 rounded-3xl border border-orange-100/30 dark:border-orange-900/10 relative overflow-hidden">
+      <Card className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5">
         <Box className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <Box className="space-y-1">
             <Typography variant="h4" className="font-serif font-bold text-slate-800 dark:text-slate-100">
@@ -263,7 +263,7 @@ const Dashboard = () => {
             </Button>
           </Box>
         </Box>
-      </Box>
+      </Card>
 
       {/* Stats Cards Grid */}
       <Grid container spacing={3}>
