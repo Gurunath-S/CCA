@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -60,105 +60,36 @@ function App() {
 
           {/* Protected Application Routes */}
           <Route
-            path="/"
             element={
               <ProtectedRoute>
                 <MainLayout>
-                  <Dashboard />
+                  <Outlet />
                 </MainLayout>
               </ProtectedRoute>
             }
-          />
-
-          <Route
-            path="/characters"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <CharacterListing />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/assess/:characterId"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <AssessmentForm />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/aggregate/:characterId"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <AssessmentAggregate />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <AssessmentHistory />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/help"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <Help />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <Settings />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Add a journals/notes route */}
-          <Route
-            path="/notes"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <PersonalNotes />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/characters" element={<CharacterListing />} />
+            <Route path="/assess/:characterId" element={<AssessmentForm />} />
+            <Route path="/aggregate/:characterId" element={<AssessmentAggregate />} />
+            <Route path="/history" element={<AssessmentHistory />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/notes" element={<PersonalNotes />} />
+          </Route>
 
           {/* Admin Panel Route */}
           <Route
-            path="/admin"
             element={
               <ProtectedRoute requireAdmin={true}>
                 <MainLayout>
-                  <AdminDashboard />
+                  <Outlet />
                 </MainLayout>
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
           
           {/* Redirect all unmatched routes to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />

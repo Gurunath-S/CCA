@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import {
@@ -17,7 +17,8 @@ import {
   Divider,
   Button,
   useTheme as useMuiTheme,
-  useMediaQuery
+  useMediaQuery,
+  CircularProgress
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -222,7 +223,13 @@ const MainLayout = ({ children }) => {
             transition={{ duration: 0.4 }}
             className="h-full flex flex-col"
           >
-            {children}
+            <Suspense fallback={
+              <Box className="flex flex-col items-center justify-center min-h-[300px]">
+                <CircularProgress className="text-orange-500" />
+              </Box>
+            }>
+              {children}
+            </Suspense>
           </motion.div>
         </Box>
       </Box>
