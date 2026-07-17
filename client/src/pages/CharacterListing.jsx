@@ -225,13 +225,19 @@ const CharacterListing = () => {
                               color={getCategoryColor(c.category)}
                               className="rounded-full text-xs font-semibold"
                             />
-                            {c.submissionCount > 0 && (
-                              <Chip
-                                label={`${c.submissionCount} submissions`}
-                                size="small"
-                                variant="outlined"
-                                className="rounded-full text-xs"
-                              />
+                            {c.submissionCount > 0 ? (
+                              <Box className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full px-2.5 py-0.5 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" style={{ width: 11, height: 11, flexShrink: 0 }}>
+                                  <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
+                                </svg>
+                                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.01em', lineHeight: 1 }}>
+                                  {c.submissionCount} {c.submissionCount === 1 ? 'submission' : 'submissions'}
+                                </span>
+                              </Box>
+                            ) : (
+                              <Box className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-full px-2.5 py-0.5">
+                                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.01em', lineHeight: 1 }}>Not yet assessed</span>
+                              </Box>
                             )}
                           </Box>
 
