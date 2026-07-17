@@ -67,22 +67,29 @@ export const getMuiTheme = (themeName) => {
       h1: {
         fontFamily: '"Playfair Display", "Outfit", serif',
         fontWeight: 700,
+        letterSpacing: '-0.02em',
+        lineHeight: 1.2,
       },
       h2: {
         fontFamily: '"Playfair Display", "Outfit", serif',
         fontWeight: 700,
+        letterSpacing: '-0.01em',
+        lineHeight: 1.25,
       },
       h3: {
         fontFamily: '"Playfair Display", "Outfit", serif',
         fontWeight: 600,
+        lineHeight: 1.3,
       },
       h4: {
-        fontFamily: '"Outfit", sans-serif',
+        fontFamily: '"Playfair Display", "Outfit", serif',
         fontWeight: 600,
+        lineHeight: 1.35,
       },
       h5: {
-        fontFamily: '"Outfit", sans-serif',
+        fontFamily: '"Playfair Display", "Outfit", serif',
         fontWeight: 500,
+        lineHeight: 1.4,
       },
       h6: {
         fontFamily: '"Outfit", sans-serif',
