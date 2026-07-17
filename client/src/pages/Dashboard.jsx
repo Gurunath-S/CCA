@@ -149,43 +149,63 @@ const Dashboard = () => {
 
   // 2. Streaks Calculation
   const calculateStreak = () => {
-    if (history.length === 0) return 0;
+    if (history.length === 0) return { current: 0, best: 0 };
     
-    // Get sorted unique dates (YYYY-MM-DD)
+    // Get sorted unique dates (YYYY-MM-DD) in ascending order (oldest first)
     const dates = history
       .map(item => dayjs(item.assessmentDate).format('YYYY-MM-DD'))
       .filter((value, index, self) => self.indexOf(value) === index)
-      .sort((a, b) => new Date(b) - new Date(a)); // Descending (today first)
+      .sort((a, b) => new Date(a) - new Date(b));
 
-    let streak = 0;
-    let today = dayjs().format('YYYY-MM-DD');
-    let yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+    let best = 0;
+    let tempStreak = 0;
+    let prevDate = null;
 
-    // Check if the most recent submission is today or yesterday
-    if (dates[0] !== today && dates[0] !== yesterday) {
-      return 0; // Streak broken
-    }
-
-    let expectedDate = dayjs(dates[0]);
     for (let i = 0; i < dates.length; i++) {
       const currentDate = dayjs(dates[i]);
-      const diff = expectedDate.diff(currentDate, 'day');
-      
-      if (diff === 0) {
-        streak++;
-        expectedDate = expectedDate.subtract(1, 'day');
-      } else if (diff === 1) {
-        // Gap of exactly 1 day (e.g. skipped but next is sequential)
-        streak++;
-        expectedDate = currentDate.subtract(1, 'day');
+      if (prevDate === null) {
+        tempStreak = 1;
       } else {
-        break; // Streak broken
+        const diff = currentDate.diff(prevDate, 'day');
+        if (diff === 1) {
+          tempStreak++;
+        } else if (diff > 1) {
+          if (tempStreak > best) {
+            best = tempStreak;
+          }
+          tempStreak = 1; // reset streak
+        }
+      }
+      prevDate = currentDate;
+    }
+    if (tempStreak > best) {
+      best = tempStreak;
+    }
+
+    // Calculate current active streak (must end today or yesterday)
+    let current = 0;
+    const descDates = [...dates].sort((a, b) => new Date(b) - new Date(a)); // today first
+    const today = dayjs().format('YYYY-MM-DD');
+    const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+
+    if (descDates[0] === today || descDates[0] === yesterday) {
+      let expectedDate = dayjs(descDates[0]);
+      for (let i = 0; i < descDates.length; i++) {
+        const currentDate = dayjs(descDates[i]);
+        const diff = expectedDate.diff(currentDate, 'day');
+        if (diff === 0) {
+          current++;
+          expectedDate = expectedDate.subtract(1, 'day');
+        } else {
+          break;
+        }
       }
     }
-    return streak;
+
+    return { current, best: Math.max(best, current) };
   };
 
-  const currentStreak = calculateStreak();
+  const { current: currentStreak, best: bestStreak } = calculateStreak();
 
   // 3. Most Practiced Character
   const getMostPracticed = () => {
@@ -303,6 +323,9 @@ const Dashboard = () => {
                 </Typography>
                 <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
                   {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'}
+                </Typography>
+                <Typography variant="caption" className="text-slate-400 font-medium block mt-1">
+                  Best Streak: <span className="font-bold text-slate-600 dark:text-slate-350">{bestStreak} {bestStreak === 1 ? 'day' : 'days'}</span>
                 </Typography>
               </Box>
               <Box className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-2xl text-orange-500">

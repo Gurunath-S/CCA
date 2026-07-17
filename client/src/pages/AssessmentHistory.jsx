@@ -21,7 +21,13 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Divider,
-  Skeleton
+  Skeleton,
+  TablePagination,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import {
   Spa as SpaIcon,
@@ -54,8 +60,17 @@ const AssessmentHistory = () => {
   const { history, fetchHistory, isLoading } = useCharacterStore();
   const { user } = useAuthStore();
   
-  // Timeline view: weekly, monthly, yearly
-  const [timeFilter, setTimeFilter] = useState('monthly');
+  // Timeline view: weekly, monthly, yearly (default to weekly / last 7 days)
+  const [timeFilter, setTimeFilter] = useState('weekly');
+
+  // Self-Reflection Log Table Pagination & Filter state
+  const [logPage, setLogPage] = useState(0);
+  const [logRowsPerPage, setLogRowsPerPage] = useState(5);
+  const [logSearch, setLogSearch] = useState('');
+  const [logCategory, setLogCategory] = useState('All');
+  const [logTimeRange, setLogTimeRange] = useState('All');
+  const [logStartDate, setLogStartDate] = useState('');
+  const [logEndDate, setLogEndDate] = useState('');
 
   const userTheme = user?.profile?.theme || 'Classic';
   const colors = themePalettes[userTheme]?.chartColors || themePalettes.Classic.chartColors;
@@ -148,8 +163,24 @@ const AssessmentHistory = () => {
     );
   }
 
+  // Helper to filter history based on selected time range for charts
+  const getFilteredHistory = () => {
+    const now = dayjs();
+    let cutoff;
+    if (timeFilter === 'weekly') cutoff = now.subtract(7, 'day');
+    else if (timeFilter === 'monthly') cutoff = now.subtract(30, 'day');
+    else return history; // 'yearly' shows all
+
+    return history.filter(item => {
+      const itemDate = dayjs(item.assessmentDate);
+      return itemDate.isAfter(cutoff) || itemDate.isSame(cutoff, 'day');
+    });
+  };
+
+  const filteredHistory = getFilteredHistory();
+
   // 1. Line Chart Data: Alignment score trend over time (sorted chronologically)
-  const lineChartData = [...history]
+  const lineChartData = [...filteredHistory]
     .reverse() // Make it chronological (oldest to newest)
     .map(item => ({
       date: dayjs(item.assessmentDate).format('MMM DD'),
@@ -158,22 +189,9 @@ const AssessmentHistory = () => {
       character: item.character.name.split(' (')[0] // shorten name
     }));
 
-  // Filter line chart data based on selected range
-  const getFilteredLineData = () => {
-    const now = dayjs();
-    let cutoff;
-    if (timeFilter === 'weekly') cutoff = now.subtract(7, 'day');
-    else if (timeFilter === 'monthly') cutoff = now.subtract(30, 'day');
-    else cutoff = now.subtract(1, 'year');
-
-    return lineChartData.filter(item => {
-      return item.fullDate.isAfter(cutoff) || timeFilter === 'yearly';
-    });
-  };
-
   // 2. Radar Chart Data: Holistic mapping of character strengths (average per trait)
   const traitAverages = {};
-  history.forEach(item => {
+  filteredHistory.forEach(item => {
     const name = item.character.name.split(' (')[0];
     if (!traitAverages[name]) {
       traitAverages[name] = { total: 0, count: 0 };
@@ -190,7 +208,7 @@ const AssessmentHistory = () => {
 
   // 3. Bar Chart Data & Improvement Highlighting: Oldest vs. Latest comparison per character trait
   const traitComparisons = {};
-  history.forEach(item => {
+  filteredHistory.forEach(item => {
     const name = item.character.name.split(' (')[0];
     if (!traitComparisons[name]) {
       traitComparisons[name] = [];
@@ -225,6 +243,44 @@ const AssessmentHistory = () => {
   // Sort improvements (highest first)
   improvements.sort((a, b) => b.difference - a.difference);
 
+  // 4. Log Table Filtering
+  const getFilteredLogData = () => {
+    return history.filter(item => {
+      // Search term filter
+      const matchesSearch = item.character.name.toLowerCase().includes(logSearch.toLowerCase()) ||
+        (item.personalNote && item.personalNote.toLowerCase().includes(logSearch.toLowerCase()));
+      
+      // Category filter
+      const matchesCategory = logCategory === 'All' || item.character.category === logCategory;
+
+      // Time Period filter
+      let matchesTime = true;
+      const itemDate = dayjs(item.assessmentDate);
+      if (logTimeRange === '7days') {
+        matchesTime = itemDate.isAfter(dayjs().subtract(7, 'day')) || itemDate.isSame(dayjs().subtract(7, 'day'), 'day');
+      } else if (logTimeRange === '30days') {
+        matchesTime = itemDate.isAfter(dayjs().subtract(30, 'day')) || itemDate.isSame(dayjs().subtract(30, 'day'), 'day');
+      } else if (logTimeRange === 'custom') {
+        if (logStartDate) {
+          matchesTime = matchesTime && (itemDate.isAfter(dayjs(logStartDate)) || itemDate.isSame(dayjs(logStartDate), 'day'));
+        }
+        if (logEndDate) {
+          matchesTime = matchesTime && (itemDate.isBefore(dayjs(logEndDate)) || itemDate.isSame(dayjs(logEndDate), 'day'));
+        }
+      }
+
+      return matchesSearch && matchesCategory && matchesTime;
+    });
+  };
+
+  const filteredLogData = getFilteredLogData();
+
+  // Paginate filtered log data
+  const paginatedLogData = filteredLogData.slice(
+    logPage * logRowsPerPage,
+    logPage * logRowsPerPage + logRowsPerPage
+  );
+
   return (
     <Box className="space-y-6">
       {/* Header */}
@@ -252,143 +308,151 @@ const AssessmentHistory = () => {
       </Box>
 
       {/* Main Charts */}
-      <Grid container spacing={3}>
-        {/* Line Chart: Progression trend */}
-        <Grid item xs={12} lg={8}>
-          <Card>
-            <CardContent className="p-6">
-              <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
-                Alignment Score Progression
-              </Typography>
-              <Box className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={getFilteredLineData()}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                    <XAxis dataKey="date" tickLine={false} />
-                    <YAxis domain={[1, 5]} tickLine={false} allowDecimals={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      name="Alignment Score"
-                      stroke={colors[0] || '#2563eb'}
-                      strokeWidth={3}
-                      activeDot={{ r: 8 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Radar Chart: Holistic mapping */}
-        <Grid item xs={12} lg={4}>
-          <Card className="h-full">
-            <CardContent className="p-6 flex flex-col justify-between h-full">
-              <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
-                Character Strengths Map
-              </Typography>
-              <Box className="h-[260px] w-full flex items-center justify-center">
-                {radarChartData.length < 3 ? (
-                  <Typography variant="caption" className="text-slate-400 text-center block">
-                    Assess at least 3 unique traits to see radar map.
-                  </Typography>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" radius="70%" data={radarChartData}>
-                      <PolarGrid opacity={0.15} />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
-                      <PolarRadiusAxis domain={[0, 5]} angle={30} tickCount={6} />
-                      <Radar
-                        name="Strength level"
-                        dataKey="value"
-                        stroke={colors[1] || '#10b981'}
-                        fill={colors[1] || '#10b981'}
-                        fillOpacity={0.25}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Bar Chart: Oldest vs. Newest Comparison */}
-        <Grid item xs={12} md={6}>
-          <Card className="h-full">
-            <CardContent className="p-6">
-              <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
-                Trait Comparison (Before & After)
-              </Typography>
-              <Box className="h-[280px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={comparisonData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                    <XAxis dataKey="name" tickLine={false} tick={{ fontSize: 10 }} />
-                    <YAxis domain={[0, 5]} tickLine={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="Initial Score" fill={colors[2] || '#94a3b8'} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Latest Score" fill={colors[0] || '#2563eb'} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Growth Highlights */}
-        <Grid item xs={12} md={6}>
-          <Card className="h-full">
-            <CardContent className="p-6 flex flex-col justify-between h-full">
-              <Box>
+      {filteredHistory.length === 0 ? (
+        <Paper className="p-8 text-center bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-slate-100 dark:border-slate-800">
+          <Typography variant="body1" className="text-slate-500">
+            No assessment data available for the last {timeFilter === 'weekly' ? '7 days' : '30 days'}. Try selecting "Yearly" to see older history.
+          </Typography>
+        </Paper>
+      ) : (
+        <Grid container spacing={3}>
+          {/* Line Chart: Progression trend */}
+          <Grid item xs={12} lg={8}>
+            <Card>
+              <CardContent className="p-6">
                 <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
-                  Growth & Improvement Highlights
+                  Alignment Score Progression
                 </Typography>
-                <Box className="space-y-3">
-                  {improvements.slice(0, 4).map((imp) => {
-                    const isPositive = imp.difference > 0;
-                    return (
-                      <Paper
-                        key={imp.name}
-                        elevation={0}
-                        className="p-3 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between"
-                      >
-                        <Box>
-                          <Typography variant="subtitle2" className="font-bold text-sm">
-                            {imp.name}
-                          </Typography>
-                          <Typography variant="caption" className="text-slate-400">
-                            Last checked: {imp.date}
-                          </Typography>
-                        </Box>
+                <Box className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lineChartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                      <XAxis dataKey="date" tickLine={false} />
+                      <YAxis domain={[1, 5]} tickLine={false} allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="score"
+                        name="Alignment Score"
+                        stroke={colors[0] || '#2563eb'}
+                        strokeWidth={3}
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-                        <Box className="flex items-center gap-3">
-                          <Box className="text-right">
-                            <Typography variant="body2" className="text-slate-400 text-xs">
-                              {imp.oldScore} → {imp.newScore}
+          {/* Radar Chart: Holistic mapping */}
+          <Grid item xs={12} lg={4}>
+            <Card className="h-full">
+              <CardContent className="p-6 flex flex-col justify-between h-full">
+                <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
+                  Character Strengths Map
+                </Typography>
+                <Box className="h-[260px] w-full flex items-center justify-center">
+                  {radarChartData.length < 3 ? (
+                    <Typography variant="caption" className="text-slate-400 text-center block">
+                      Assess at least 3 unique traits to see radar map.
+                    </Typography>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" radius="70%" data={radarChartData}>
+                        <PolarGrid opacity={0.15} />
+                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                        <PolarRadiusAxis domain={[0, 5]} angle={30} tickCount={6} />
+                        <Radar
+                          name="Strength level"
+                          dataKey="value"
+                          stroke={colors[1] || '#10b981'}
+                          fill={colors[1] || '#10b981'}
+                          fillOpacity={0.25}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Bar Chart: Oldest vs. Newest Comparison */}
+          <Grid item xs={12} md={6}>
+            <Card className="h-full">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
+                  Trait Comparison (Before & After)
+                </Typography>
+                <Box className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={comparisonData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                      <XAxis dataKey="name" tickLine={false} tick={{ fontSize: 10 }} />
+                      <YAxis domain={[0, 5]} tickLine={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="Initial Score" fill={colors[2] || '#94a3b8'} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Latest Score" fill={colors[0] || '#2563eb'} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Growth Highlights */}
+          <Grid item xs={12} md={6}>
+            <Card className="h-full">
+              <CardContent className="p-6 flex flex-col justify-between h-full">
+                <Box>
+                  <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
+                    Growth & Improvement Highlights
+                  </Typography>
+                  <Box className="space-y-3">
+                    {improvements.slice(0, 4).map((imp) => {
+                      const isPositive = imp.difference > 0;
+                      return (
+                        <Paper
+                          key={imp.name}
+                          elevation={0}
+                          className="p-3 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between"
+                        >
+                          <Box>
+                            <Typography variant="subtitle2" className="font-bold text-sm">
+                              {imp.name}
+                            </Typography>
+                            <Typography variant="caption" className="text-slate-400">
+                              Last checked: {imp.date}
                             </Typography>
                           </Box>
-                          <Chip
-                            icon={isPositive ? <UpIcon /> : <DownIcon />}
-                            label={isPositive ? `+${imp.difference}` : imp.difference}
-                            color={isPositive ? 'success' : imp.difference === 0 ? 'default' : 'warning'}
-                            size="small"
-                            className="font-bold rounded-lg text-xs"
-                          />
-                        </Box>
-                      </Paper>
-                    );
-                  })}
+
+                          <Box className="flex items-center gap-3">
+                            <Box className="text-right">
+                              <Typography variant="body2" className="text-slate-400 text-xs">
+                                {imp.oldScore} → {imp.newScore}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              icon={isPositive ? <UpIcon /> : <DownIcon />}
+                              label={isPositive ? `+${imp.difference}` : imp.difference}
+                              color={isPositive ? 'success' : imp.difference === 0 ? 'default' : 'warning'}
+                              size="small"
+                              className="font-bold rounded-lg text-xs"
+                            />
+                          </Box>
+                        </Paper>
+                      );
+                    })}
+                  </Box>
                 </Box>
-              </Box>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
       {/* Chronological Timeline Table */}
       <Card>
@@ -396,39 +460,173 @@ const AssessmentHistory = () => {
           <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
             Self-Reflection Log
           </Typography>
-          <TableContainer className="border border-slate-100 dark:border-slate-900 rounded-2xl overflow-hidden">
-            <Table>
-              <TableHead className="bg-slate-50 dark:bg-slate-900">
-                <TableRow>
-                  <TableCell className="font-semibold text-xs text-slate-500">Date</TableCell>
-                  <TableCell className="font-semibold text-xs text-slate-500">Character Attribute</TableCell>
-                  <TableCell className="font-semibold text-xs text-slate-500">Score</TableCell>
-                  <TableCell className="font-semibold text-xs text-slate-500">Effort Level</TableCell>
-                  <TableCell className="font-semibold text-xs text-slate-500">Personal Reflections</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {history.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
-                    <TableCell className="text-xs">{dayjs(item.assessmentDate).format('YYYY-MM-DD')}</TableCell>
-                    <TableCell className="font-bold text-xs">{item.character.name}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={`${item.alignmentScore} / 5`}
-                        size="small"
-                        color={item.alignmentScore >= 4 ? 'success' : item.alignmentScore >= 3 ? 'primary' : 'warning'}
-                        className="font-semibold text-xs rounded-lg"
-                      />
-                    </TableCell>
-                    <TableCell className="text-xs max-w-xs truncate">{item.effortLevel}</TableCell>
-                    <TableCell className="text-xs text-slate-500 dark:text-slate-400 italic max-w-md truncate">
-                      {item.personalNote || 'No notes added'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+
+          {/* Filters Row */}
+          <Grid container spacing={2} className="mb-6 items-center">
+            {/* Search Input */}
+            <Grid item xs={12} sm={3}>
+              <TextField
+                fullWidth
+                size="small"
+                variant="outlined"
+                label="Search Character / Notes"
+                placeholder="Search..."
+                value={logSearch}
+                onChange={(e) => {
+                  setLogSearch(e.target.value);
+                  setLogPage(0);
+                }}
+                slotProps={{
+                  input: { className: 'rounded-xl' }
+                }}
+              />
+            </Grid>
+
+            {/* Category Filter */}
+            <Grid item xs={12} sm={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={logCategory}
+                  onChange={(e) => {
+                    setLogCategory(e.target.value);
+                    setLogPage(0);
+                  }}
+                  label="Category"
+                  slotProps={{
+                    input: { className: 'rounded-xl' }
+                  }}
+                >
+                  <MenuItem value="All">All Categories</MenuItem>
+                  <MenuItem value="Yama">Yama</MenuItem>
+                  <MenuItem value="Niyama">Niyama</MenuItem>
+                  <MenuItem value="General">General</MenuItem>
+                  <MenuItem value="Custom">Custom</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Time Filter Preset */}
+            <Grid item xs={12} sm={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Time Period</InputLabel>
+                <Select
+                  value={logTimeRange}
+                  onChange={(e) => {
+                    setLogTimeRange(e.target.value);
+                    setLogPage(0);
+                  }}
+                  label="Time Period"
+                  slotProps={{
+                    input: { className: 'rounded-xl' }
+                  }}
+                >
+                  <MenuItem value="All">All Time</MenuItem>
+                  <MenuItem value="7days">Last 7 Days</MenuItem>
+                  <MenuItem value="30days">Last 30 Days</MenuItem>
+                  <MenuItem value="custom">Custom Range</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Custom Date Range Pickers */}
+            {logTimeRange === 'custom' && (
+              <>
+                <Grid item xs={12} sm={1.5}>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    size="small"
+                    label="From"
+                    InputLabelProps={{ shrink: true }}
+                    value={logStartDate}
+                    onChange={(e) => {
+                      setLogStartDate(e.target.value);
+                      setLogPage(0);
+                    }}
+                    slotProps={{
+                      input: { className: 'rounded-xl' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={1.5}>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    size="small"
+                    label="To"
+                    InputLabelProps={{ shrink: true }}
+                    value={logEndDate}
+                    onChange={(e) => {
+                      setLogEndDate(e.target.value);
+                      setLogPage(0);
+                    }}
+                    slotProps={{
+                      input: { className: 'rounded-xl' }
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
+          </Grid>
+
+          {filteredLogData.length === 0 ? (
+            <Paper className="p-8 text-center bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl border border-dashed border-slate-200/60 dark:border-slate-800/40">
+              <Typography variant="body2" className="text-slate-400">
+                No logs match your filter criteria.
+              </Typography>
+            </Paper>
+          ) : (
+            <>
+              <TableContainer className="border border-slate-100 dark:border-slate-900 rounded-2xl overflow-hidden">
+                <Table>
+                  <TableHead className="bg-slate-50 dark:bg-slate-900">
+                    <TableRow>
+                      <TableCell className="font-semibold text-xs text-slate-500">Date</TableCell>
+                      <TableCell className="font-semibold text-xs text-slate-500">Character Attribute</TableCell>
+                      <TableCell className="font-semibold text-xs text-slate-500">Score</TableCell>
+                      <TableCell className="font-semibold text-xs text-slate-500">Effort Level</TableCell>
+                      <TableCell className="font-semibold text-xs text-slate-500">Personal Reflections</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedLogData.map((item) => (
+                      <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/20">
+                        <TableCell className="text-xs">{dayjs(item.assessmentDate).format('YYYY-MM-DD')}</TableCell>
+                        <TableCell className="font-bold text-xs">{item.character.name}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={`${item.alignmentScore} / 5`}
+                            size="small"
+                            color={item.alignmentScore >= 4 ? 'success' : item.alignmentScore >= 3 ? 'primary' : 'warning'}
+                            className="font-semibold text-xs rounded-lg"
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs max-w-xs truncate">{item.effortLevel}</TableCell>
+                        <TableCell className="text-xs text-slate-500 dark:text-slate-400 italic max-w-md truncate">
+                          {item.personalNote || 'No notes added'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}
+                component="div"
+                count={filteredLogData.length}
+                rowsPerPage={logRowsPerPage}
+                page={logPage}
+                onPageChange={(e, newPage) => setLogPage(newPage)}
+                onRowsPerPageChange={(e) => {
+                  setLogRowsPerPage(parseInt(e.target.value, 10));
+                  setLogPage(0);
+                }}
+                className="mt-2 text-slate-500 text-xs"
+              />
+            </>
+          )}
         </CardContent>
       </Card>
     </Box>

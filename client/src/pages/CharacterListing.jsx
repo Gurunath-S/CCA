@@ -38,6 +38,12 @@ const CharacterListing = () => {
   const { characters, fetchCharacters, createCustomCharacter, isLoading, error } = useCharacterStore();
   const navigate = useNavigate();
 
+  // Score visibility toggle state
+  const [visibleScores, setVisibleScores] = useState({});
+  const toggleScoreVisibility = (id) => {
+    setVisibleScores(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -241,19 +247,38 @@ const CharacterListing = () => {
                         </Box>
 
                         <Box className="mt-4 space-y-4">
-                          {/* Progress bar */}
-                          <Box>
-                            <Box className="flex justify-between text-xs font-medium text-slate-400 mb-1">
-                              <span>Alignment score</span>
-                              <span>{c.latestScore ? `${c.latestScore} / 5` : 'No score'}</span>
+                          {/* Progress bar (conditionally visible) */}
+                          {visibleScores[c.id] ? (
+                            <Box className="bg-slate-50 dark:bg-slate-900/30 p-3 rounded-2xl border border-slate-100/50 dark:border-slate-800/40">
+                              <Box className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                                <span>Alignment score</span>
+                                <span>{c.latestScore ? `${c.latestScore} / 5` : 'No score'}</span>
+                              </Box>
+                              <LinearProgress
+                                variant="determinate"
+                                value={progressPercentage}
+                                color={c.latestScore >= 4 ? 'success' : c.latestScore >= 3 ? 'primary' : 'warning'}
+                                className="rounded-full h-1.5 mb-1"
+                              />
+                              <Button
+                                size="small"
+                                onClick={() => toggleScoreVisibility(c.id)}
+                                className="text-[10px] text-slate-400 hover:text-slate-655 p-0 min-w-0 normal-case block mt-2"
+                              >
+                                Hide score
+                              </Button>
                             </Box>
-                            <LinearProgress
-                              variant="determinate"
-                              value={progressPercentage}
-                              color={c.latestScore >= 4 ? 'success' : c.latestScore >= 3 ? 'primary' : 'warning'}
-                              className="rounded-full h-1.5"
-                            />
-                          </Box>
+                          ) : (
+                            <Box className="flex justify-center py-2 bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl border border-dashed border-slate-200/50 dark:border-slate-800/30">
+                              <Button
+                                size="small"
+                                onClick={() => toggleScoreVisibility(c.id)}
+                                className="text-xs text-orange-500 hover:text-orange-600 font-semibold py-0.5 normal-case"
+                              >
+                                Show Alignment Score
+                              </Button>
+                            </Box>
+                          )}
 
                           <Box className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                             <Button
