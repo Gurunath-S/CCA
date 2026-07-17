@@ -422,6 +422,10 @@ const Dashboard = () => {
                         strokeWidth={3}
                         fillOpacity={1}
                         fill="url(#colorScore)"
+                        isAnimationActive={true}
+                        animationBegin={200}
+                        animationDuration={1200}
+                        animationEasing="ease-out"
                       />
                     </AreaChart>
                   </ResponsiveContainer>

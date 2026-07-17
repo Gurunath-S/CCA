@@ -344,6 +344,10 @@ const AssessmentHistory = () => {
                         stroke={colors[0] || '#2563eb'}
                         strokeWidth={3}
                         activeDot={{ r: 8 }}
+                        isAnimationActive={true}
+                        animationBegin={300}
+                        animationDuration={1400}
+                        animationEasing="ease-out"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -378,6 +382,10 @@ const AssessmentHistory = () => {
                           stroke={colors[1] || '#10b981'}
                           fill={colors[1] || '#10b981'}
                           fillOpacity={0.25}
+                          isAnimationActive={true}
+                          animationBegin={200}
+                          animationDuration={1200}
+                          animationEasing="ease-out"
                         />
                       </RadarChart>
                     </ResponsiveContainer>
@@ -404,8 +412,8 @@ const AssessmentHistory = () => {
                       <YAxis domain={[0, 5]} tickLine={false} />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="Initial Score" fill={colors[2] || '#94a3b8'} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Latest Score" fill={colors[0] || '#2563eb'} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Initial Score" fill={colors[2] || '#94a3b8'} radius={[4, 4, 0, 0]} isAnimationActive={true} animationBegin={200} animationDuration={1000} animationEasing="ease-out" />
+                      <Bar dataKey="Latest Score" fill={colors[0] || '#2563eb'} radius={[4, 4, 0, 0]} isAnimationActive={true} animationBegin={400} animationDuration={1000} animationEasing="ease-out" />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
