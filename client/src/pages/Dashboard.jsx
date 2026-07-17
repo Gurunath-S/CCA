@@ -293,11 +293,11 @@ const Dashboard = () => {
       )}
 
       {/* Stats Cards Grid */}
-      <Grid container spacing={3}>
+      <Grid container spacing={3} alignItems="stretch">
         {/* Total Assessments */}
         <Grid item xs={12} sm={4}>
-          <Card className="hover:scale-[1.01] transition-transform duration-300">
-            <CardContent className="p-6 flex items-center justify-between">
+          <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+            <CardContent className="p-6 flex items-center justify-between h-full">
               <Box>
                 <Typography variant="subtitle2" className="text-slate-400 font-medium">
                   Total Assessments
@@ -315,20 +315,23 @@ const Dashboard = () => {
 
         {/* Current Streak */}
         <Grid item xs={12} sm={4}>
-          <Card className="hover:scale-[1.01] transition-transform duration-300">
-            <CardContent className="p-6 flex items-center justify-between">
-              <Box>
+          <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+            <CardContent className="p-6 flex items-center justify-between h-full">
+              <Box className="flex flex-col">
                 <Typography variant="subtitle2" className="text-slate-400 font-medium">
                   Current Streak
                 </Typography>
                 <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
                   {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'}
                 </Typography>
-                <Typography variant="caption" className="text-slate-400 font-medium block mt-1">
-                  Best Streak: <span className="font-bold text-slate-600 dark:text-slate-350">{bestStreak} {bestStreak === 1 ? 'day' : 'days'}</span>
-                </Typography>
+                <Box className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-full px-2.5 py-0.5 w-fit">
+                  <FireIcon sx={{ fontSize: 12 }} className="text-amber-500" />
+                  <Typography variant="caption" className="text-amber-600 dark:text-amber-400 font-semibold tracking-tight">
+                    Best: {bestStreak} {bestStreak === 1 ? 'day' : 'days'}
+                  </Typography>
+                </Box>
               </Box>
-              <Box className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-2xl text-orange-500">
+              <Box className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-2xl text-orange-500 self-start">
                 <FireIcon fontSize="large" />
               </Box>
             </CardContent>
@@ -337,8 +340,8 @@ const Dashboard = () => {
 
         {/* Most Practiced */}
         <Grid item xs={12} sm={4}>
-          <Card className="hover:scale-[1.01] transition-transform duration-300">
-            <CardContent className="p-6 flex items-center justify-between">
+          <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+            <CardContent className="p-6 flex items-center justify-between h-full">
               <Box className="max-w-[70%]">
                 <Typography variant="subtitle2" className="text-slate-400 font-medium">
                   Most Practiced Trait
