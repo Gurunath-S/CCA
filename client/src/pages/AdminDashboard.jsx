@@ -33,7 +33,8 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemText
+  Skeleton,
+  TablePagination
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -57,6 +58,10 @@ const AdminDashboard = () => {
   // User list filters
   const [userSearch, setUserSearch] = useState('');
   const [userAgeFilter, setUserAgeFilter] = useState('All');
+
+  // User table pagination
+  const [userPage, setUserPage] = useState(0);
+  const [userRowsPerPage, setUserRowsPerPage] = useState(8);
 
   // New Attribute Form
   const [newAttrName, setNewAttrName] = useState('');
@@ -197,6 +202,12 @@ const AdminDashboard = () => {
     return matchesSearch && matchesAge;
   });
 
+  // Paginated slice of filtered users
+  const paginatedUsers = filteredUsers.slice(
+    userPage * userRowsPerPage,
+    userPage * userRowsPerPage + userRowsPerPage
+  );
+
   // Filter global attributes list
   const filteredGlobalAttributes = globalAttributes.filter((attr) => {
     const matchesSearch = 
@@ -282,7 +293,7 @@ const AdminDashboard = () => {
       {/* Tabs */}
       <Box className="border-b border-slate-200 dark:border-slate-800">
         <Tabs value={tabValue} onChange={(e, val) => setTabValue(val)} color="primary">
-          <Tab label="Users & Usage" className="font-semibold text-sm py-3" />
+          <Tab label="All Users" className="font-semibold text-sm py-3" />
           <Tab label="Global Attributes Manager" className="font-semibold text-sm py-3" />
         </Tabs>
       </Box>
@@ -341,59 +352,88 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Users Table */}
-          {isLoadingUsers ? (
-            <Box className="flex justify-center p-12">
-              <CircularProgress color="primary" />
-            </Box>
-          ) : filteredUsers.length === 0 ? (
-            <Paper className="p-12 text-center bg-white/40 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <Typography className="text-slate-400 font-medium">No users match the search criteria.</Typography>
-            </Paper>
-          ) : (
-            <TableContainer component={Paper} className="shadow-md rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-              <Table>
-                <TableHead className="bg-slate-50 dark:bg-slate-900/50">
-                  <TableRow>
-                    <TableCell className="font-semibold text-slate-600 dark:text-slate-300">User</TableCell>
-                    <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Role</TableCell>
-                    <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Age Group</TableCell>
-                    <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Date Joined</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredUsers.map((userItem) => (
-                    <TableRow
-                      key={userItem.id}
-                      onClick={() => handleInspectUser(userItem.id)}
-                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors cursor-pointer"
-                    >
-                      <TableCell>
-                        <Box className="flex items-center gap-3">
-                          <Avatar src={userItem.picture} alt={userItem.name} sx={{ width: 38, height: 38 }} />
-                          <Box>
-                            <Typography className="font-semibold text-sm text-slate-800 dark:text-slate-200">{userItem.name || 'Anonymous'}</Typography>
-                            <Typography variant="caption" className="text-slate-400 block">{userItem.email}</Typography>
+          <TableContainer component={Paper} className="shadow-md rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+            <Table>
+              <TableHead className="bg-slate-50 dark:bg-slate-900/50">
+                <TableRow>
+                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">User</TableCell>
+                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Role</TableCell>
+                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Age Group</TableCell>
+                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Date Joined</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isLoadingUsers
+                  ? Array.from({ length: userRowsPerPage }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <Box className="flex items-center gap-3">
+                            <Skeleton variant="circular" width={38} height={38} />
+                            <Box className="flex flex-col gap-1">
+                              <Skeleton variant="text" width={120} height={14} />
+                              <Skeleton variant="text" width={160} height={12} />
+                            </Box>
                           </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={userItem.role}
-                          size="small"
-                          color={userItem.role === 'ADMIN' ? 'error' : 'default'}
-                          className="rounded-full text-xs font-semibold"
-                        />
-                      </TableCell>
-                      <TableCell className="text-sm font-medium text-slate-600 dark:text-slate-400">{userItem.profile?.ageGroup || 'N/A'}</TableCell>
-                      <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                        {new Date(userItem.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+                        </TableCell>
+                        <TableCell><Skeleton variant="rounded" width={60} height={22} /></TableCell>
+                        <TableCell><Skeleton variant="text" width={70} height={14} /></TableCell>
+                        <TableCell><Skeleton variant="text" width={90} height={14} /></TableCell>
+                      </TableRow>
+                    ))
+                  : paginatedUsers.length === 0
+                  ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-10 text-slate-400">
+                          No users match the search criteria.
+                        </TableCell>
+                      </TableRow>
+                    )
+                  : paginatedUsers.map((userItem) => (
+                      <TableRow
+                        key={userItem.id}
+                        onClick={() => handleInspectUser(userItem.id)}
+                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors cursor-pointer"
+                      >
+                        <TableCell>
+                          <Box className="flex items-center gap-3">
+                            <Avatar src={userItem.picture} alt={userItem.name} sx={{ width: 38, height: 38 }} />
+                            <Box>
+                              <Typography className="font-semibold text-sm text-slate-800 dark:text-slate-200">{userItem.name || 'Anonymous'}</Typography>
+                              <Typography variant="caption" className="text-slate-400 block">{userItem.email}</Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={userItem.role}
+                            size="small"
+                            color={userItem.role === 'ADMIN' ? 'error' : 'default'}
+                            className="rounded-full text-xs font-semibold"
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm font-medium text-slate-600 dark:text-slate-400">{userItem.profile?.ageGroup || 'N/A'}</TableCell>
+                        <TableCell className="text-sm text-slate-500 dark:text-slate-400">
+                          {new Date(userItem.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                }
+              </TableBody>
+            </Table>
+            <TablePagination
+              rowsPerPageOptions={[5, 8, 15, 25]}
+              component="div"
+              count={filteredUsers.length}
+              rowsPerPage={userRowsPerPage}
+              page={userPage}
+              onPageChange={(e, newPage) => setUserPage(newPage)}
+              onRowsPerPageChange={(e) => {
+                setUserRowsPerPage(parseInt(e.target.value, 10));
+                setUserPage(0);
+              }}
+              className="border-t border-slate-100 dark:border-slate-800 text-slate-500 text-xs"
+            />
+          </TableContainer>
         </Box>
       )}
 
