@@ -358,14 +358,15 @@ const AdminDashboard = () => {
                     <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Role</TableCell>
                     <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Age Group</TableCell>
                     <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Date Joined</TableCell>
-                    <TableCell className="font-semibold text-slate-600 dark:text-slate-300 align-middle text-center">Assessments</TableCell>
-                    <TableCell className="font-semibold text-slate-600 dark:text-slate-300 align-middle text-center">Notes</TableCell>
-                    <TableCell className="font-semibold text-slate-600 dark:text-slate-300 text-right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredUsers.map((userItem) => (
-                    <TableRow key={userItem.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors">
+                    <TableRow
+                      key={userItem.id}
+                      onClick={() => handleInspectUser(userItem.id)}
+                      className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors cursor-pointer"
+                    >
                       <TableCell>
                         <Box className="flex items-center gap-3">
                           <Avatar src={userItem.picture} alt={userItem.name} sx={{ width: 38, height: 38 }} />
@@ -386,19 +387,6 @@ const AdminDashboard = () => {
                       <TableCell className="text-sm font-medium text-slate-600 dark:text-slate-400">{userItem.profile?.ageGroup || 'N/A'}</TableCell>
                       <TableCell className="text-sm text-slate-500 dark:text-slate-400">
                         {new Date(userItem.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                      </TableCell>
-                      <TableCell className="align-middle text-center font-bold text-slate-700 dark:text-slate-300">{userItem._count?.assessments || 0}</TableCell>
-                      <TableCell className="align-middle text-center font-bold text-slate-700 dark:text-slate-300">{userItem._count?.notes || 0}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => handleInspectUser(userItem.id)}
-                          className="rounded-lg border-orange-200 dark:border-orange-900/50 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-orange-500 text-xs font-semibold"
-                          endIcon={<ArrowRightIcon sx={{ width: 14, height: 14 }} />}
-                        >
-                          Inspect
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
