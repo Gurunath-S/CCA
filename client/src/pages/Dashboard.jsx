@@ -43,7 +43,17 @@ import {
   Tooltip
 } from 'recharts';
 import dayjs from 'dayjs';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Reusable animation variants
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.45, delay: i * 0.1, ease: 'easeOut' } })
+};
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } }
+};
 
 const Dashboard = () => {
   const { characters, history, fetchCharacters, fetchHistory, isLoading, error } = useCharacterStore();
@@ -293,75 +303,84 @@ const Dashboard = () => {
       )}
 
       {/* Stats Cards Grid */}
-      <Grid container spacing={3} alignItems="stretch">
-        {/* Total Assessments */}
-        <Grid item xs={12} sm={4}>
-          <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
-            <CardContent className="p-6 flex items-center justify-between h-full">
-              <Box>
-                <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                  Total Assessments
-                </Typography>
-                <Typography variant="h3" className="font-bold font-serif text-slate-800 dark:text-slate-100 mt-1">
-                  {totalAssessments}
-                </Typography>
-              </Box>
-              <Box className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-2xl text-blue-500">
-                <CheckIcon fontSize="large" />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+      <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+        <Grid container spacing={3} alignItems="stretch">
+          {/* Total Assessments */}
+          <Grid item xs={12} sm={4}>
+            <motion.div variants={fadeUp} custom={0} style={{ height: '100%' }}>
+              <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+                <CardContent className="p-6 flex items-center justify-between h-full">
+                  <Box>
+                    <Typography variant="subtitle2" className="text-slate-400 font-medium">
+                      Total Assessments
+                    </Typography>
+                    <Typography variant="h3" className="font-bold font-serif text-slate-800 dark:text-slate-100 mt-1">
+                      {totalAssessments}
+                    </Typography>
+                  </Box>
+                  <Box className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-2xl text-blue-500">
+                    <CheckIcon fontSize="large" />
+                  </Box>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </Grid>
 
-        {/* Current Streak */}
-        <Grid item xs={12} sm={4}>
-          <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
-            <CardContent className="p-6 flex items-center justify-between h-full">
-              <Box className="flex flex-col">
-                <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                  Current Streak
-                </Typography>
-                <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
-                  {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'}
-                </Typography>
-                <Box className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-full px-2.5 py-0.5 w-fit">
-                  <FireIcon sx={{ fontSize: 12 }} className="text-amber-500" />
-                  <Typography variant="caption" className="text-amber-600 dark:text-amber-400 font-semibold tracking-tight">
-                    Best: {bestStreak} {bestStreak === 1 ? 'day' : 'days'}
-                  </Typography>
-                </Box>
-              </Box>
-              <Box className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-2xl text-orange-500 self-start">
-                <FireIcon fontSize="large" />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+          {/* Current Streak */}
+          <Grid item xs={12} sm={4}>
+            <motion.div variants={fadeUp} custom={1} style={{ height: '100%' }}>
+              <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+                <CardContent className="p-6 flex items-center justify-between h-full">
+                  <Box className="flex flex-col">
+                    <Typography variant="subtitle2" className="text-slate-400 font-medium">
+                      Current Streak
+                    </Typography>
+                    <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
+                      {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'}
+                    </Typography>
+                    <Box className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-full px-2.5 py-0.5 w-fit">
+                      <FireIcon sx={{ fontSize: 12 }} className="text-amber-500" />
+                      <Typography variant="caption" className="text-amber-600 dark:text-amber-400 font-semibold tracking-tight">
+                        Best: {bestStreak} {bestStreak === 1 ? 'day' : 'days'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-2xl text-orange-500 self-start">
+                    <FireIcon fontSize="large" />
+                  </Box>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </Grid>
 
-        {/* Most Practiced */}
-        <Grid item xs={12} sm={4}>
-          <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
-            <CardContent className="p-6 flex items-center justify-between h-full">
-              <Box className="max-w-[70%]">
-                <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                  Most Practiced Trait
-                </Typography>
-                <Typography variant="h5" className="font-bold truncate text-teal-600 dark:text-teal-400 mt-2">
-                  {mostPracticed}
-                </Typography>
-              </Box>
-              <Box className="p-3 bg-teal-50 dark:bg-teal-950/30 rounded-2xl text-teal-500">
-                <SpaIcon fontSize="large" />
-              </Box>
-            </CardContent>
-          </Card>
+          {/* Most Practiced */}
+          <Grid item xs={12} sm={4}>
+            <motion.div variants={fadeUp} custom={2} style={{ height: '100%' }}>
+              <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+                <CardContent className="p-6 flex items-center justify-between h-full">
+                  <Box className="max-w-[70%]">
+                    <Typography variant="subtitle2" className="text-slate-400 font-medium">
+                      Most Practiced Trait
+                    </Typography>
+                    <Typography variant="h5" className="font-bold truncate text-teal-600 dark:text-teal-400 mt-2">
+                      {mostPracticed}
+                    </Typography>
+                  </Box>
+                  <Box className="p-3 bg-teal-50 dark:bg-teal-950/30 rounded-2xl text-teal-500">
+                    <SpaIcon fontSize="large" />
+                  </Box>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </Grid>
         </Grid>
-      </Grid>
+      </motion.div>
 
       {/* Main Grid Content */}
       <Grid container spacing={3}>
         {/* Progress Charts summary */}
         <Grid item xs={12} lg={8}>
+          <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible" style={{ height: '100%' }}>
           <Card className="h-full">
             <CardContent className="p-6">
               <Box className="flex justify-between items-center mb-4">
@@ -410,6 +429,7 @@ const Dashboard = () => {
               </Box>
             </CardContent>
           </Card>
+          </motion.div>
         </Grid>
 
         {/* Quick Start & Improving list */}
@@ -488,6 +508,7 @@ const Dashboard = () => {
       </Grid>
 
       {/* Recent Activity Logs */}
+      <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible">
       <Card>
         <CardContent className="p-6">
           <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
@@ -498,27 +519,32 @@ const Dashboard = () => {
               No recent assessment activity recorded.
             </Typography>
           ) : (
-            <List className="divide-y divide-slate-100 dark:divide-slate-900 p-0">
-              {recentActivity.map((activity) => (
-                <ListItem key={activity.id} className="px-0 py-3 flex justify-between items-center gap-4">
-                  <ListItemText
-                    primary={activity.character.name}
-                    secondary={`Checked: ${dayjs(activity.assessmentDate).format('YYYY-MM-DD')} • "${activity.effortLevel}"`}
-                    primaryTypographyProps={{ className: 'font-bold text-sm text-slate-800 dark:text-slate-100' }}
-                    secondaryTypographyProps={{ className: 'text-xs text-slate-400 mt-0.5' }}
-                  />
-                  <Chip
-                    label={`Score: ${activity.alignmentScore}`}
-                    size="small"
-                    color={activity.alignmentScore >= 4 ? 'success' : activity.alignmentScore >= 3 ? 'primary' : 'warning'}
-                    className="font-semibold text-xs rounded-lg"
-                  />
-                </ListItem>
-              ))}
-            </List>
+            <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+              <List className="divide-y divide-slate-100 dark:divide-slate-900 p-0">
+                {recentActivity.map((activity, idx) => (
+                  <motion.div key={activity.id} variants={fadeUp} custom={idx}>
+                    <ListItem className="px-0 py-3 flex justify-between items-center gap-4">
+                      <ListItemText
+                        primary={activity.character.name}
+                        secondary={`Checked: ${dayjs(activity.assessmentDate).format('YYYY-MM-DD')} • "${activity.effortLevel}"`}
+                        primaryTypographyProps={{ className: 'font-bold text-sm text-slate-800 dark:text-slate-100' }}
+                        secondaryTypographyProps={{ className: 'text-xs text-slate-400 mt-0.5' }}
+                      />
+                      <Chip
+                        label={`Score: ${activity.alignmentScore}`}
+                        size="small"
+                        color={activity.alignmentScore >= 4 ? 'success' : activity.alignmentScore >= 3 ? 'primary' : 'warning'}
+                        className="font-semibold text-xs rounded-lg"
+                      />
+                    </ListItem>
+                  </motion.div>
+                ))}
+              </List>
+            </motion.div>
           )}
         </CardContent>
       </Card>
+      </motion.div>
     </Box>
   );
 };

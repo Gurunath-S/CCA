@@ -56,6 +56,11 @@ import {
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.45, delay: i * 0.1, ease: 'easeOut' } })
+};
+
 const AssessmentHistory = () => {
   const { history, fetchHistory, isLoading } = useCharacterStore();
   const { user } = useAuthStore();
@@ -318,6 +323,7 @@ const AssessmentHistory = () => {
         <Grid container spacing={3}>
           {/* Line Chart: Progression trend */}
           <Grid item xs={12} lg={8}>
+            <motion.div variants={fadeUp} custom={0} initial="hidden" animate="visible">
             <Card>
               <CardContent className="p-6">
                 <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
@@ -344,10 +350,12 @@ const AssessmentHistory = () => {
                 </Box>
               </CardContent>
             </Card>
+            </motion.div>
           </Grid>
 
           {/* Radar Chart: Holistic mapping */}
           <Grid item xs={12} lg={4}>
+            <motion.div variants={fadeUp} custom={1} initial="hidden" animate="visible" style={{ height: '100%' }}>
             <Card className="h-full">
               <CardContent className="p-6 flex flex-col justify-between h-full">
                 <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
@@ -377,10 +385,12 @@ const AssessmentHistory = () => {
                 </Box>
               </CardContent>
             </Card>
+            </motion.div>
           </Grid>
 
           {/* Bar Chart: Oldest vs. Newest Comparison */}
           <Grid item xs={12} md={6}>
+            <motion.div variants={fadeUp} custom={2} initial="hidden" animate="visible" style={{ height: '100%' }}>
             <Card className="h-full">
               <CardContent className="p-6">
                 <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
@@ -401,10 +411,12 @@ const AssessmentHistory = () => {
                 </Box>
               </CardContent>
             </Card>
+            </motion.div>
           </Grid>
 
           {/* Growth Highlights */}
           <Grid item xs={12} md={6}>
+            <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible" style={{ height: '100%' }}>
             <Card className="h-full">
               <CardContent className="p-6 flex flex-col justify-between h-full">
                 <Box>
@@ -450,11 +462,13 @@ const AssessmentHistory = () => {
                 </Box>
               </CardContent>
             </Card>
+            </motion.div>
           </Grid>
         </Grid>
       )}
 
       {/* Chronological Timeline Table */}
+      <motion.div variants={fadeUp} custom={4} initial="hidden" animate="visible">
       <Card>
         <CardContent className="p-6">
           <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
@@ -629,6 +643,7 @@ const AssessmentHistory = () => {
           )}
         </CardContent>
       </Card>
+      </motion.div>
     </Box>
   );
 };
