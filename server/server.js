@@ -46,8 +46,7 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   console.error('Unhandled Server Error:', err.stack);
   res.status(500).json({
-    message: 'An internal server error occurred',
-    error: process.env.NODE_ENV === 'development' ? err.message : {}
+    message: err.message || 'An internal server error occurred'
   });
 });
 
