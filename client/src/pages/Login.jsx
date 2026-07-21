@@ -117,7 +117,7 @@ const Login = () => {
           transform: 'translate3d(0, 0, 0)'
         }}
       >
-        <source src="/19609-303404131_medium.mp4" type="video/mp4" />
+        <source src="/bg_video_fast.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
 
@@ -185,9 +185,11 @@ const Login = () => {
           <Box className="flex items-center text-left space-x-4 bg-slate-900/60 p-4 rounded-2xl border border-white/5 shadow-inner">
             <Box className="flex-shrink-0">
               <img
-                src="/NLakshminarayanaNaidu.png"
+                src="/NLakshminarayanaNaidu_optimized.webp"
                 alt="N. Lakshminarayana Naidu"
                 className="w-32 h-42 rounded-2xl object-contain bg-slate-950/40 p-1 border-2 border-orange-500/60 dark:border-orange-400/60 shadow-md transition-all duration-300 hover:scale-105"
+                loading="lazy"
+                decoding="async"
               />
             </Box>
             <Box className="flex-grow min-w-0 space-y-1">
