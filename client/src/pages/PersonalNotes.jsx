@@ -346,6 +346,7 @@ const PersonalNotes = () => {
                                     <IconButton
                                       size="small"
                                       color="primary"
+                                      aria-label="Save note"
                                       onClick={() => handleSaveEdit(note.id)}
                                       disabled={!editingContent.trim()}
                                     >
@@ -354,6 +355,7 @@ const PersonalNotes = () => {
                                     <IconButton
                                       size="small"
                                       color="inherit"
+                                      aria-label="Cancel editing"
                                       onClick={() => setEditingNoteId(null)}
                                     >
                                       <CancelIcon />
@@ -374,6 +376,7 @@ const PersonalNotes = () => {
                                   <Box className="flex flex-shrink-0">
                                     <IconButton
                                       size="small"
+                                      aria-label="Edit reflection"
                                       onClick={() => {
                                         setEditingNoteId(note.id);
                                         setEditingContent(note.content);
@@ -384,6 +387,7 @@ const PersonalNotes = () => {
                                     </IconButton>
                                     <IconButton
                                       size="small"
+                                      aria-label="Delete reflection"
                                       onClick={() => setNoteToDelete(note)}
                                       className="text-slate-400 hover:text-red-500"
                                     >

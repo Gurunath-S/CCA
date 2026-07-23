@@ -7,7 +7,7 @@ export const themePalettes = {
     primary: { main: '#2563eb', light: '#3b82f6', dark: '#1d4ed8' }, // Calm blue
     secondary: { main: '#475569', light: '#64748b', dark: '#334155' },
     background: { default: '#f8fafc', paper: '#ffffff' },
-    text: { primary: '#0f172a', secondary: '#475569' },
+    text: { primary: '#0f172a', secondary: '#334155' },
     divider: 'rgba(0, 0, 0, 0.08)',
     chartColors: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#1e40af'],
   },
@@ -16,7 +16,7 @@ export const themePalettes = {
     primary: { main: '#60a5fa', light: '#93c5fd', dark: '#2563eb' }, // Sleek dark navy
     secondary: { main: '#38bdf8', light: '#7dd3fc', dark: '#0284c7' },
     background: { default: '#0f172a', paper: '#1e293b' },
-    text: { primary: '#f8fafc', secondary: '#94a3b8' },
+    text: { primary: '#f8fafc', secondary: '#cbd5e1' },
     divider: 'rgba(255, 255, 255, 0.08)',
     chartColors: ['#60a5fa', '#38bdf8', '#0ea5e9', '#0284c7', '#1e293b'],
   },
@@ -25,7 +25,7 @@ export const themePalettes = {
     primary: { main: '#059669', light: '#10b981', dark: '#047857' }, // Relaxing green
     secondary: { main: '#0d9488', light: '#14b8a6', dark: '#0f766e' },
     background: { default: '#f0fdf4', paper: '#ffffff' },
-    text: { primary: '#064e3b', secondary: '#0f766e' },
+    text: { primary: '#064e3b', secondary: '#047857' },
     divider: 'rgba(0, 0, 0, 0.06)',
     chartColors: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#047857'],
   },
@@ -34,7 +34,7 @@ export const themePalettes = {
     primary: { main: '#b45309', light: '#d97706', dark: '#78350f' }, // Cream, brown, gold
     secondary: { main: '#854d0e', light: '#ca8a04', dark: '#713f12' },
     background: { default: '#fffbeb', paper: '#ffffff' },
-    text: { primary: '#1c1917', secondary: '#57534e' },
+    text: { primary: '#1c1917', secondary: '#44403c' },
     divider: 'rgba(0, 0, 0, 0.08)',
     chartColors: ['#b45309', '#d97706', '#ca8a04', '#eab308', '#78350f'],
   },
@@ -43,7 +43,7 @@ export const themePalettes = {
     primary: { main: '#f97316', light: '#fb923c', dark: '#ea580c' }, // Saffron orange
     secondary: { main: '#1e3a8a', light: '#3b82f6', dark: '#172554' }, // Deep Blue
     background: { default: '#fffbeb', paper: '#ffffff' }, // Warm White
-    text: { primary: '#1c1917', secondary: '#431407' },
+    text: { primary: '#1e1b4b', secondary: '#1e3a8a' },
     divider: 'rgba(251, 146, 60, 0.15)',
     chartColors: ['#f97316', '#1e3a8a', '#eab308', '#fb923c', '#3b82f6'],
   }
@@ -118,8 +118,8 @@ export const getMuiTheme = (themeName) => {
             boxShadow: palette.mode === 'dark' 
               ? '0 8px 32px 0 rgba(0, 0, 0, 0.25)' 
               : '0 8px 32px 0 rgba(31, 38, 135, 0.04)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
             borderRadius: '18px',
             border: palette.mode === 'dark'
               ? '1px solid rgba(255, 255, 255, 0.07)'

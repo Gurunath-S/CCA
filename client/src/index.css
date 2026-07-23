@@ -18,7 +18,7 @@
   --color-bg-paper: rgba(255, 255, 255, 0.7);
   --color-bg-sidebar: #0f172a;
   --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
+  --color-text-secondary: #334155;
   --color-border: rgba(226, 232, 240, 0.8);
 
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -41,7 +41,7 @@
   --color-bg-paper: rgba(30, 41, 59, 0.7);
   --color-bg-sidebar: #090d16;
   --color-text-primary: #f8fafc;
-  --color-text-secondary: #94a3b8;
+  --color-text-secondary: #cbd5e1;
   --color-border: rgba(255, 255, 255, 0.08);
 }
 
@@ -59,7 +59,7 @@
   --color-bg-paper: rgba(255, 255, 255, 0.75);
   --color-bg-sidebar: #064e3b;
   --color-text-primary: #064e3b;
-  --color-text-secondary: #15803d;
+  --color-text-secondary: #047857;
   --color-border: rgba(209, 250, 229, 0.8);
 }
 
@@ -76,8 +76,8 @@
   --color-bg-default: #fffbeb;
   --color-bg-paper: rgba(255, 255, 255, 0.75);
   --color-bg-sidebar: #3e2723;
-  --color-text-primary: #2d1a10;
-  --color-text-secondary: #78350f;
+  --color-text-primary: #1c1917;
+  --color-text-secondary: #44403c;
   --color-border: rgba(231, 229, 228, 0.8);
 }
 
@@ -93,9 +93,9 @@
 
   --color-bg-default: #fffbeb;
   --color-bg-paper: rgba(255, 255, 255, 0.8);
-  --color-bg-sidebar: #311b92;
-  --color-text-primary: #1a0c5c;
-  --color-text-secondary: #ea580c;
+  --color-bg-sidebar: #172554;
+  --color-text-primary: #1e1b4b;
+  --color-text-secondary: #1e3a8a;
   --color-border: rgba(251, 146, 60, 0.2);
 }
 

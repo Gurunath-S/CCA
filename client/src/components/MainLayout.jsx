@@ -25,16 +25,26 @@ import {
   Dashboard as DashboardIcon,
   ListAlt as ListIcon,
   History as HistoryIcon,
-  HelpOutline as HelpIcon,
+  AutoAwesome as InspirationIcon,
   Settings as SettingsIcon,
   ExitToApp as LogoutIcon,
   Spa as SpaIcon,
   Book as JournalIcon,
   AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 const drawerWidth = 260;
+
+const baseNavItems = [
+  { text: 'Dashboard', path: '/', icon: <DashboardIcon /> },
+  { text: 'Character Attributes', path: '/characters', icon: <ListIcon /> },
+  { text: 'Assessment History', path: '/history', icon: <HistoryIcon /> },
+  { text: 'Reflective Journal', path: '/notes', icon: <JournalIcon /> },
+  { text: 'Inspiration', path: '/inspiration', icon: <InspirationIcon /> },
+  { text: 'Settings', path: '/settings', icon: <SettingsIcon /> },
+];
 
 const MainLayout = ({ children }) => {
   const { user, logout } = useAuthStore();
@@ -54,76 +64,96 @@ const MainLayout = ({ children }) => {
     navigate('/login');
   };
 
-  const navItems = [
-    { text: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-    { text: 'Character Attributes', path: '/characters', icon: <ListIcon /> },
-    { text: 'Assessment History', path: '/history', icon: <HistoryIcon /> },
-    { text: 'Reflective Journal', path: '/notes', icon: <JournalIcon /> },
-    { text: 'Help Section', path: '/help', icon: <HelpIcon /> },
-    { text: 'Settings', path: '/settings', icon: <SettingsIcon /> },
-  ];
+  const navItems = useMemo(() => {
+    if (user?.role === 'ADMIN') {
+      return [...baseNavItems, { text: 'Admin Panel', path: '/admin', icon: <AdminIcon /> }];
+    }
+    return baseNavItems;
+  }, [user?.role]);
 
-  if (user?.role === 'ADMIN') {
-    navItems.push({ text: 'Admin Panel', path: '/admin', icon: <AdminIcon /> });
-  }
-
-  const drawerContent = (
-    <Box className="h-full flex flex-col justify-between theme-transition text-slate-100/90">
+  const drawerContent = useMemo(() => (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', color: 'rgba(248, 250, 252, 0.9)', transition: 'all 0.3s ease' }}>
       <Box>
         {/* Header/Logo */}
-        <Box className="p-6 flex items-center gap-3">
-          <SpaIcon className="text-orange-500 text-3xl" />
-          <Typography variant="h5" className="font-bold tracking-wider font-serif bg-gradient-to-r from-orange-400 via-yellow-500 to-amber-300 bg-clip-text text-transparent">
+        <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <SpaIcon sx={{ color: '#f97316', fontSize: 32 }} />
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 700, 
+              letterSpacing: '0.05em',
+              fontFamily: '"Playfair Display", serif',
+              background: 'linear-gradient(to right, #fb923c, #eab308, #fcd34d)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+          >
             Character Coach
           </Typography>
         </Box>
         
-        <Divider className="opacity-15 mx-4" />
+        <Divider sx={{ opacity: 0.15, mx: 2 }} />
  
         {/* User Card */}
-        <Box className="p-5 flex items-center gap-3">
+        <Box sx={{ px: 2.5, py: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Avatar 
             src={user?.picture} 
             alt={user?.name}
-            sx={{ width: 44, height: 44, border: '2px solid rgba(251, 146, 60, 0.5)' }}
+            sx={{ width: 44, height: 44, border: '2px solid rgba(251, 146, 60, 0.6)' }}
           />
-          <Box className="overflow-hidden">
-            <Typography variant="subtitle2" className="font-semibold truncate text-white">
+          <Box sx={{ overflow: 'hidden' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
               {user?.name || 'Guest User'}
             </Typography>
-            <Typography variant="caption" className="text-slate-350 block truncate">
+            <Typography variant="caption" sx={{ color: '#cbd5e1', display: 'block', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
               {user?.profile?.ageGroup ? `Age: ${user.profile.ageGroup}` : 'Onboarding Profile'}
             </Typography>
           </Box>
         </Box>
  
-        <Divider className="opacity-15 mx-4 mb-4" />
+        <Divider sx={{ opacity: 0.15, mx: 2, mb: 2 }} />
  
         {/* Navigation List */}
-        <List className="px-3 space-y-1">
+        <List sx={{ px: 1.5, py: 0 }}>
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
-              <ListItem key={item.text} disablePadding>
+              <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                 <ListItemButton
                   component={Link}
                   to={item.path}
                   onClick={() => isMobile && setMobileOpen(false)}
-                  className={`rounded-xl transition-all duration-300 ${
-                    isActive 
-                      ? 'bg-orange-500/20 text-orange-400 font-semibold border-l-4 border-orange-500 pl-3' 
-                      : 'hover:bg-white/10 text-slate-350 hover:text-white'
-                  }`}
+                  sx={{
+                    borderRadius: '12px',
+                    transition: 'all 0.3s ease',
+                    backgroundColor: isActive ? 'rgba(249, 115, 22, 0.18)' : 'transparent',
+                    borderLeft: isActive ? '4px solid #f97316' : '4px solid transparent',
+                    pl: isActive ? 1.5 : 2,
+                    '&:hover': {
+                      backgroundColor: isActive ? 'rgba(249, 115, 22, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                    }
+                  }}
                 >
                   <ListItemIcon 
-                    className={`min-w-[40px] transition-colors ${
-                      isActive ? 'text-orange-400' : 'text-slate-400'
-                    }`}
+                    sx={{ 
+                      minWidth: 40, 
+                      color: isActive ? '#fb923c' : '#cbd5e1',
+                      transition: 'color 0.3s ease'
+                    }}
                   >
                     {item.icon}
                   </ListItemIcon>
-                  <ListItemText primary={item.text} primaryTypographyProps={{ className: 'text-sm font-medium' }} />
+                  <ListItemText 
+                    primary={item.text} 
+                    primaryTypographyProps={{ 
+                      sx: { 
+                        fontSize: '0.875rem', 
+                        fontWeight: isActive ? 600 : 500,
+                        color: isActive ? '#fb923c' : '#e2e8f0'
+                      } 
+                    }} 
+                  />
                 </ListItemButton>
               </ListItem>
             );
@@ -132,20 +162,31 @@ const MainLayout = ({ children }) => {
       </Box>
  
       {/* Logout button at bottom */}
-      <Box className="p-4">
+      <Box sx={{ p: 2 }}>
         <Button
           fullWidth
           variant="outlined"
-          color="inherit"
           startIcon={<LogoutIcon />}
           onClick={handleLogout}
-          className="rounded-xl border-white/20 text-slate-300 hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/10 py-2.5"
+          sx={{
+            borderRadius: '12px',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            color: '#cbd5e1',
+            py: 1.25,
+            textTransform: 'none',
+            fontWeight: 500,
+            '&:hover': {
+              color: '#f87171',
+              borderColor: 'rgba(239, 68, 68, 0.5)',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)'
+            }
+          }}
         >
           Logout
         </Button>
       </Box>
     </Box>
-  );
+  ), [user, location.pathname, navItems, isMobile, handleLogout]);
 
   return (
     <Box className="flex min-h-screen bg-themeBg text-themeText theme-transition">
@@ -166,18 +207,24 @@ const MainLayout = ({ children }) => {
           <AppBar 
             position="fixed" 
             elevation={0}
-            className="bg-themeSidebar text-white border-b border-themeBorder"
+            sx={{
+              backgroundColor: 'var(--color-bg-sidebar)',
+              color: '#ffffff',
+              borderBottom: '1px solid var(--color-border)',
+              boxShadow: 'none'
+            }}
           >
             <Toolbar className="flex justify-between px-4">
               <IconButton
                 color="inherit"
                 edge="start"
                 onClick={handleDrawerToggle}
+                aria-label="Toggle navigation menu"
                 sx={{ mr: 2 }}
               >
                 <MenuIcon />
               </IconButton>
-              <Typography variant="h6" className="font-serif font-semibold">
+              <Typography variant="h6" className="font-serif font-semibold text-white">
                 Character Coach
               </Typography>
               <Avatar 
@@ -190,16 +237,19 @@ const MainLayout = ({ children }) => {
             </Toolbar>
           </AppBar>
           <Drawer
+            container={() => document.getElementById('root') || document.body}
             variant="temporary"
             open={mobileOpen}
             onClose={handleDrawerToggle}
-            ModalProps={{ keepMounted: true }}
+            ModalProps={{ keepMounted: false }}
             sx={{
               '& .MuiDrawer-paper': { 
                 boxSizing: 'border-box', 
                 width: drawerWidth, 
                 backgroundColor: 'var(--color-bg-sidebar)',
-                borderRight: '1px solid var(--color-border)'
+                color: '#f8fafc',
+                borderRight: '1px solid var(--color-border)',
+                backgroundImage: 'none'
               },
             }}
           >
@@ -217,10 +267,10 @@ const MainLayout = ({ children }) => {
       >
         <Box className="flex-grow p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.4 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             className="h-full flex flex-col"
           >
             <Suspense fallback={
