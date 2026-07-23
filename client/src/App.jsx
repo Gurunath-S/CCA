@@ -24,7 +24,7 @@ const AssessmentForm = lazy(() => import('./pages/AssessmentForm'));
 const AssessmentAggregate = lazy(() => import('./pages/AssessmentAggregate'));
 const AssessmentHistory = lazy(() => import('./pages/AssessmentHistory'));
 const PersonalNotes = lazy(() => import('./pages/PersonalNotes'));
-const Help = lazy(() => import('./pages/Help'));
+const Inspiration = lazy(() => import('./pages/Inspiration'));
 const Settings = lazy(() => import('./pages/Settings'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
@@ -38,7 +38,7 @@ function App() {
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Suspense fallback={
           <Box className="flex flex-col items-center justify-center min-h-screen bg-themeBg theme-transition">
             <CircularProgress className="text-orange-500" />
@@ -73,7 +73,8 @@ function App() {
             <Route path="/assess/:characterId" element={<AssessmentForm />} />
             <Route path="/aggregate/:characterId" element={<AssessmentAggregate />} />
             <Route path="/history" element={<AssessmentHistory />} />
-            <Route path="/help" element={<Help />} />
+            <Route path="/inspiration" element={<Inspiration />} />
+            <Route path="/help" element={<Navigate to="/inspiration" replace />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/notes" element={<PersonalNotes />} />
           </Route>

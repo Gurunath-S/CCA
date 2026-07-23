@@ -69,8 +69,10 @@ const AssessmentHistory = () => {
     ? { isAnimationActive: false }
     : { isAnimationActive: true, animationBegin: 150, animationDuration: 800, animationEasing: 'ease-out' };
   
-  // Timeline view: weekly, monthly, yearly (default to weekly / last 7 days)
-  const [timeFilter, setTimeFilter] = useState('weekly');
+  // Timeline view: 7days, 30days, 1year, all, custom (default to 7days)
+  const [timeFilter, setTimeFilter] = useState('7days');
+  const [chartStartDate, setChartStartDate] = useState('');
+  const [chartEndDate, setChartEndDate] = useState('');
 
   // Self-Reflection Log Table Pagination & Filter state
   const [logPage, setLogPage] = useState(0);
@@ -174,11 +176,23 @@ const AssessmentHistory = () => {
 
   // Helper to filter history based on selected time range for charts
   const getFilteredHistory = () => {
+    if (history.length === 0) return [];
     const now = dayjs();
     let cutoff;
-    if (timeFilter === 'weekly') cutoff = now.subtract(7, 'day');
-    else if (timeFilter === 'monthly') cutoff = now.subtract(30, 'day');
-    else return history; // 'yearly' shows all
+    if (timeFilter === '7days' || timeFilter === 'weekly') cutoff = now.subtract(7, 'day');
+    else if (timeFilter === '30days' || timeFilter === 'monthly') cutoff = now.subtract(30, 'day');
+    else if (timeFilter === '1year' || timeFilter === 'yearly') cutoff = now.subtract(1, 'year');
+    else if (timeFilter === 'custom') {
+      return history.filter(item => {
+        const itemDate = dayjs(item.assessmentDate);
+        let match = true;
+        if (chartStartDate) match = match && (itemDate.isAfter(dayjs(chartStartDate)) || itemDate.isSame(dayjs(chartStartDate), 'day'));
+        if (chartEndDate) match = match && (itemDate.isBefore(dayjs(chartEndDate)) || itemDate.isSame(dayjs(chartEndDate), 'day'));
+        return match;
+      });
+    } else {
+      return history; // 'all'
+    }
 
     return history.filter(item => {
       const itemDate = dayjs(item.assessmentDate);
@@ -308,20 +322,84 @@ const AssessmentHistory = () => {
           exclusive
           onChange={(e, val) => val && setTimeFilter(val)}
           size="small"
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl"
+          className="bg-slate-100/80 dark:bg-slate-900/80 p-1 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-inner backdrop-blur-sm"
+          sx={{
+            '& .MuiToggleButton-root': {
+              border: 0,
+              borderRadius: '10px',
+              color: 'text.secondary',
+              textTransform: 'none',
+              px: 1.8,
+              py: 0.6,
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                color: '#f97316'
+              }
+            },
+            '& .Mui-selected': {
+              backgroundColor: '#f97316 !important',
+              color: '#ffffff !important',
+              boxShadow: '0 2px 8px rgba(249, 115, 22, 0.35)',
+              fontWeight: 700
+            }
+          }}
         >
-          <ToggleButton value="weekly" className="px-4 py-1.5 rounded-l-xl text-xs font-semibold capitalize">Weekly</ToggleButton>
-          <ToggleButton value="monthly" className="px-4 py-1.5 text-xs font-semibold capitalize">Monthly</ToggleButton>
-          <ToggleButton value="yearly" className="px-4 py-1.5 rounded-r-xl text-xs font-semibold capitalize">Yearly</ToggleButton>
+          <ToggleButton value="7days">7 Days</ToggleButton>
+          <ToggleButton value="30days">30 Days</ToggleButton>
+          <ToggleButton value="1year">1 Year</ToggleButton>
+          <ToggleButton value="all">All Time</ToggleButton>
+          <ToggleButton value="custom">Custom</ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
+      {/* Custom Date Range Pickers with Glassmorphism */}
+      {timeFilter === 'custom' && (
+        <Box className="flex flex-col sm:flex-row gap-3 p-4 bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-slate-500/5 dark:from-orange-500/10 dark:to-slate-900/40 rounded-2xl border border-orange-500/20 shadow-sm backdrop-blur-md">
+          <TextField
+            type="date"
+            size="small"
+            label="From Date"
+            InputLabelProps={{ shrink: true }}
+            value={chartStartDate}
+            onChange={(e) => setChartStartDate(e.target.value)}
+            className="w-full sm:w-1/2"
+            slotProps={{
+              input: { className: 'rounded-xl text-xs bg-white dark:bg-slate-850 shadow-inner' }
+            }}
+          />
+          <TextField
+            type="date"
+            size="small"
+            label="To Date"
+            InputLabelProps={{ shrink: true }}
+            value={chartEndDate}
+            onChange={(e) => setChartEndDate(e.target.value)}
+            className="w-full sm:w-1/2"
+            slotProps={{
+              input: { className: 'rounded-xl text-xs bg-white dark:bg-slate-850 shadow-inner' }
+            }}
+          />
+        </Box>
+      )}
+
       {/* Main Charts */}
       {filteredHistory.length === 0 ? (
-        <Paper className="p-8 text-center bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-slate-100 dark:border-slate-800">
-          <Typography variant="body1" className="text-slate-500">
-            No assessment data available for the last {timeFilter === 'weekly' ? '7 days' : '30 days'}. Try selecting "Yearly" to see older history.
+        <Paper className="p-8 text-center bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col items-center gap-3">
+          <Typography variant="body1" className="text-slate-600 dark:text-slate-400 font-medium">
+            No assessment data available for the selected range ({timeFilter === '7days' ? 'Last 7 Days' : timeFilter === '30days' ? 'Last 30 Days' : timeFilter === '1year' ? 'Last 1 Year' : 'Custom Range'}).
           </Typography>
+          {history.length > 0 && (
+            <Button
+              variant="contained"
+              onClick={() => setTimeFilter('all')}
+              className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs px-4"
+            >
+              Show All Time History ({history.length} total assessments)
+            </Button>
+          )}
         </Paper>
       ) : (
         <Grid container spacing={3}>

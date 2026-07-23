@@ -22,7 +22,10 @@ import {
   Paper,
   Divider,
   Skeleton,
-  Alert
+  Alert,
+  ToggleButton,
+  ToggleButtonGroup,
+  TextField
 } from '@mui/material';
 import {
   Spa as SpaIcon,
@@ -43,6 +46,7 @@ import {
   Tooltip
 } from 'recharts';
 import dayjs from 'dayjs';
+import { FooterNote } from '../components/common/FooterNote';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 // Reusable animation variants — shorter duration for low-end device friendliness
@@ -69,6 +73,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const [quickStartId, setQuickStartId] = useState('');
+  const [dashTimeFilter, setDashTimeFilter] = useState('7days');
+  const [dashStartDate, setDashStartDate] = useState('');
+  const [dashEndDate, setDashEndDate] = useState('');
 
   const userTheme = user?.profile?.theme || 'Classic';
   const colors = themePalettes[userTheme]?.chartColors || themePalettes.Classic.chartColors;
@@ -262,9 +269,35 @@ const Dashboard = () => {
 
   const topImproving = getTopImproving();
 
-  // 6. Recent Progress Chart Data (latest 6 assessments)
-  const chartData = [...history]
-    .slice(0, 6)
+  // 6. Filtered Progress Chart Data according to selected time range
+  const getFilteredDashHistory = () => {
+    if (history.length === 0) return [];
+    const now = dayjs();
+    let cutoff;
+    if (dashTimeFilter === '7days') cutoff = now.subtract(7, 'day');
+    else if (dashTimeFilter === '30days') cutoff = now.subtract(30, 'day');
+    else if (dashTimeFilter === '1year') cutoff = now.subtract(1, 'year');
+    else if (dashTimeFilter === 'custom') {
+      return history.filter(item => {
+        const itemDate = dayjs(item.assessmentDate);
+        let match = true;
+        if (dashStartDate) match = match && (itemDate.isAfter(dayjs(dashStartDate)) || itemDate.isSame(dayjs(dashStartDate), 'day'));
+        if (dashEndDate) match = match && (itemDate.isBefore(dayjs(dashEndDate)) || itemDate.isSame(dayjs(dashEndDate), 'day'));
+        return match;
+      });
+    } else {
+      return history; // 'all'
+    }
+
+    return history.filter(item => {
+      const itemDate = dayjs(item.assessmentDate);
+      return itemDate.isAfter(cutoff) || itemDate.isSame(cutoff, 'day');
+    });
+  };
+
+  const filteredDashHistory = getFilteredDashHistory();
+
+  const chartData = [...filteredDashHistory]
     .reverse()
     .map(item => ({
       date: dayjs(item.assessmentDate).format('MMM DD'),
@@ -391,23 +424,108 @@ const Dashboard = () => {
           <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible" style={{ height: '100%' }}>
           <Card className="h-full">
             <CardContent className="p-6">
-              <Box className="flex justify-between items-center mb-4">
+              <Box className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
                   Recent Alignment Trend
                 </Typography>
-                <Button
-                  size="small"
-                  onClick={() => navigate('/history')}
-                  startIcon={<ChartIcon />}
-                  className="text-orange-500 text-xs hover:bg-orange-50/50"
-                >
-                  Full History
-                </Button>
+
+                <Box className="flex flex-wrap items-center gap-2">
+                  <ToggleButtonGroup
+                    value={dashTimeFilter}
+                    exclusive
+                    onChange={(e, val) => val && setDashTimeFilter(val)}
+                    size="small"
+                    className="bg-slate-100/80 dark:bg-slate-900/80 p-1 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-inner backdrop-blur-sm"
+                    sx={{
+                      '& .MuiToggleButton-root': {
+                        border: 0,
+                        borderRadius: '10px',
+                        color: 'text.secondary',
+                        textTransform: 'none',
+                        px: 1.5,
+                        py: 0.5,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                          color: '#f97316'
+                        }
+                      },
+                      '& .Mui-selected': {
+                        backgroundColor: '#f97316 !important',
+                        color: '#ffffff !important',
+                        boxShadow: '0 2px 8px rgba(249, 115, 22, 0.35)',
+                        fontWeight: 700
+                      }
+                    }}
+                  >
+                    <ToggleButton value="7days">7 Days</ToggleButton>
+                    <ToggleButton value="30days">30 Days</ToggleButton>
+                    <ToggleButton value="1year">1 Year</ToggleButton>
+                    <ToggleButton value="all">All Time</ToggleButton>
+                    <ToggleButton value="custom">Custom</ToggleButton>
+                  </ToggleButtonGroup>
+
+                  <Button
+                    size="small"
+                    onClick={() => navigate('/history')}
+                    startIcon={<ChartIcon />}
+                    className="text-orange-500 hover:text-orange-600 text-xs font-semibold hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-xl px-3"
+                  >
+                    History
+                  </Button>
+                </Box>
               </Box>
+
+              {/* Custom Date Range Pickers with Glassmorphism */}
+              {dashTimeFilter === 'custom' && (
+                <Box className="flex flex-col sm:flex-row gap-3 mb-4 p-4 bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-slate-500/5 dark:from-orange-500/10 dark:to-slate-900/40 rounded-2xl border border-orange-500/20 shadow-sm backdrop-blur-md">
+                  <TextField
+                    type="date"
+                    size="small"
+                    label="From Date"
+                    InputLabelProps={{ shrink: true }}
+                    value={dashStartDate}
+                    onChange={(e) => setDashStartDate(e.target.value)}
+                    className="w-full sm:w-1/2"
+                    slotProps={{
+                      input: { className: 'rounded-xl text-xs bg-white dark:bg-slate-850 shadow-inner' }
+                    }}
+                  />
+                  <TextField
+                    type="date"
+                    size="small"
+                    label="To Date"
+                    InputLabelProps={{ shrink: true }}
+                    value={dashEndDate}
+                    onChange={(e) => setDashEndDate(e.target.value)}
+                    className="w-full sm:w-1/2"
+                    slotProps={{
+                      input: { className: 'rounded-xl text-xs bg-white dark:bg-slate-850 shadow-inner' }
+                    }}
+                  />
+                </Box>
+              )}
+
               <Box className="h-[250px] w-full">
                 {chartData.length === 0 ? (
-                  <Box className="flex flex-col justify-center items-center h-full text-slate-400">
-                    <Typography variant="caption">Submit assessments to view trend chart</Typography>
+                  <Box className="flex flex-col justify-center items-center h-full space-y-2 text-slate-400">
+                    <Typography variant="body2" className="text-slate-500 text-center">
+                      {history.length > 0
+                        ? `No assessments found for the selected range (${dashTimeFilter}).`
+                        : 'Submit your first assessment to view alignment trends!'}
+                    </Typography>
+                    {history.length > 0 && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setDashTimeFilter('all')}
+                        className="text-orange-500 border-orange-500 text-xs rounded-xl capitalize"
+                      >
+                        Show All Time History ({history.length} total)
+                      </Button>
+                    )}
                   </Box>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -558,6 +676,9 @@ const Dashboard = () => {
         </CardContent>
       </Card>
       </motion.div>
+
+      {/* Home Page Footer Note */}
+      <FooterNote />
     </Box>
   );
 };
