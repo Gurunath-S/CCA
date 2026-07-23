@@ -1,30 +1,10 @@
 import { create } from 'zustand';
-import axios from 'axios';
+import { authService } from '../services/auth.service';
+import { profileService } from '../services/profile.service';
+import { syncTailwindDarkMode } from '../utils/theme';
+import { api } from '../api/client';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// Create an Axios instance with interceptors for token refresh
-export const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Sync Tailwind dark mode class and theme class on theme change
-const syncTailwindDarkMode = (themeName) => {
-  const classesToRemove = ['theme-serenity', 'theme-midnight-focus', 'theme-nature', 'theme-classic', 'theme-vivekananda'];
-  document.documentElement.classList.remove(...classesToRemove);
-
-  const normalizedTheme = themeName.toLowerCase().replace(/\s+/g, '-');
-  document.documentElement.classList.add(`theme-${normalizedTheme}`);
-
-  if (themeName === 'Midnight Focus') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-};
+export { api };
 
 export const useAuthStore = create((set, get) => {
   // Initialize state from localStorage
@@ -54,15 +34,8 @@ export const useAuthStore = create((set, get) => {
     login: async ({ credential, isMock, email, name, picture }) => {
       set({ isLoading: true, error: null });
       try {
-        const response = await api.post('/auth/google', {
-          credential,
-          isMock,
-          email,
-          name,
-          picture
-        });
-
-        const { accessToken, refreshToken, user, isNewUser } = response.data;
+        const data = await authService.loginWithGoogle({ credential, isMock, email, name, picture });
+        const { accessToken, refreshToken, user, isNewUser } = data;
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
@@ -93,12 +66,9 @@ export const useAuthStore = create((set, get) => {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
 
-        // Fetch user data
-        const response = await api.get('/auth/me', {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
+        const data = await authService.getCurrentUser(accessToken);
+        const { user } = data;
 
-        const { user } = response.data;
         localStorage.setItem('user', JSON.stringify(user));
         syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
@@ -132,9 +102,7 @@ export const useAuthStore = create((set, get) => {
       set({ isLoading: true });
       const currentRefreshToken = get().refreshToken;
       try {
-        if (currentRefreshToken) {
-          await api.post('/auth/logout', { refreshToken: currentRefreshToken });
-        }
+        await authService.logout(currentRefreshToken);
       } catch (err) {
         console.error('Logout API error:', err);
       } finally {
@@ -159,13 +127,8 @@ export const useAuthStore = create((set, get) => {
       set({ isLoading: true, error: null });
       try {
         const token = get().accessToken;
-        const response = await api.put(
-          '/profile',
-          { ageGroup, theme },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const updatedProfile = response.data.profile;
+        const data = await profileService.updateProfile({ ageGroup, theme }, token);
+        const updatedProfile = data.profile;
         const currentUser = get().user;
         const updatedUser = {
           ...currentUser,
@@ -197,17 +160,13 @@ export const useAuthStore = create((set, get) => {
       await get().updateProfile(ageGroup, themeName);
     },
 
-    // Token refresh helper
     refreshSession: async () => {
       const currentRefreshToken = get().refreshToken;
       if (!currentRefreshToken) return false;
 
       try {
-        const response = await axios.post(`${API_URL}/auth/refresh`, {
-          refreshToken: currentRefreshToken
-        });
-
-        const { accessToken, refreshToken } = response.data;
+        const data = await authService.refreshToken(currentRefreshToken);
+        const { accessToken, refreshToken } = data;
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
@@ -221,44 +180,9 @@ export const useAuthStore = create((set, get) => {
         return accessToken;
       } catch (err) {
         console.error('Session refresh failed:', err);
-        // Force logout on failure
         get().logout();
         return false;
       }
     }
   };
 });
-
-// Configure Axios request interceptor to inject Authorization header
-api.interceptors.request.use(
-  (config) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Configure Axios response interceptor to handle 401s and refresh tokens
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Check if error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      const newAccessToken = await useAuthStore.getState().refreshSession();
-      if (newAccessToken) {
-        // Update header and retry request
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest);
-      }
-    }
-    
-    return Promise.reject(error);
-  }
-);

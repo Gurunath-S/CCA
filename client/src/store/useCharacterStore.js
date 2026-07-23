@@ -1,23 +1,31 @@
 import { create } from 'zustand';
-import { api } from './useAuthStore';
+import { characterService } from '../services/character.service';
+import { assessmentService } from '../services/assessment.service';
+import { noteService } from '../services/note.service';
 
 export const useCharacterStore = create((set, get) => ({
   characters: [],
   history: [],
   notes: [],
   selectedCharacterStats: null,
+  
+  // Granular loading states for fine-grained UI re-rendering performance
   isLoading: false,
+  isCharactersLoading: false,
+  isHistoryLoading: false,
+  isNotesLoading: false,
+  isStatsLoading: false,
   error: null,
 
   // Fetch all characters (predefined & custom, sorted by backend: submissions desc, name asc)
   fetchCharacters: async () => {
-    set({ isLoading: true, error: null });
+    set({ isCharactersLoading: true, isLoading: true, error: null });
     try {
-      const response = await api.get('/characters');
-      set({ characters: response.data.characters, isLoading: false });
+      const data = await characterService.getAll();
+      set({ characters: data.characters, isCharactersLoading: false, isLoading: false });
     } catch (err) {
       console.error('fetchCharacters error:', err);
-      set({ error: err.response?.data?.message || 'Failed to fetch characters', isLoading: false });
+      set({ error: err.response?.data?.message || 'Failed to fetch characters', isCharactersLoading: false, isLoading: false });
     }
   },
 
@@ -25,15 +33,9 @@ export const useCharacterStore = create((set, get) => ({
   createCustomCharacter: async ({ name, description, category }) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/characters/custom', {
-        name,
-        description,
-        category
-      });
+      const data = await characterService.createCustom({ name, description, category });
+      const newChar = data.character;
       
-      const newChar = response.data.character;
-      
-      // Update characters locally and re-sort
       const updatedChars = [...get().characters, newChar].sort((a, b) => {
         if (b.submissionCount !== a.submissionCount) {
           return b.submissionCount - a.submissionCount;
@@ -55,13 +57,10 @@ export const useCharacterStore = create((set, get) => ({
   submitAssessment: async (assessmentData) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post('/assessments', assessmentData);
-      
-      // Refresh characters to update submission counts and re-sort
+      const data = await assessmentService.submit(assessmentData);
       await get().fetchCharacters();
-      
       set({ isLoading: false });
-      return response.data.assessment;
+      return data.assessment;
     } catch (err) {
       console.error('submitAssessment error:', err);
       const errMsg = err.response?.data?.message || 'Failed to save assessment';
@@ -72,38 +71,38 @@ export const useCharacterStore = create((set, get) => ({
 
   // Fetch all assessment submissions (history)
   fetchHistory: async () => {
-    set({ isLoading: true, error: null });
+    set({ isHistoryLoading: true, isLoading: true, error: null });
     try {
-      const response = await api.get('/assessments/history');
-      set({ history: response.data.history, isLoading: false });
+      const data = await assessmentService.getHistory();
+      set({ history: data.history, isHistoryLoading: false, isLoading: false });
     } catch (err) {
       console.error('fetchHistory error:', err);
-      set({ error: err.response?.data?.message || 'Failed to fetch history', isLoading: false });
+      set({ error: err.response?.data?.message || 'Failed to fetch history', isHistoryLoading: false, isLoading: false });
     }
   },
 
   // Fetch aggregate data for a character
   fetchAggregateStats: async (characterId) => {
-    set({ isLoading: true, error: null });
+    set({ isStatsLoading: true, error: null });
     try {
-      const response = await api.get(`/assessments/aggregate/${characterId}`);
-      set({ selectedCharacterStats: response.data, isLoading: false });
-      return response.data;
+      const data = await assessmentService.getAggregateStats(characterId);
+      set({ selectedCharacterStats: data, isStatsLoading: false });
+      return data;
     } catch (err) {
       console.error('fetchAggregateStats error:', err);
-      set({ error: err.response?.data?.message || 'Failed to fetch aggregate stats', isLoading: false });
+      set({ error: err.response?.data?.message || 'Failed to fetch aggregate stats', isStatsLoading: false });
     }
   },
 
   // Fetch notes for a character
   fetchNotes: async (characterId) => {
-    set({ isLoading: true, error: null });
+    set({ isNotesLoading: true, error: null });
     try {
-      const response = await api.get(`/notes/${characterId}`);
-      set({ notes: response.data.notes, isLoading: false });
+      const data = await noteService.getByCharacter(characterId);
+      set({ notes: data.notes, isNotesLoading: false });
     } catch (err) {
       console.error('fetchNotes error:', err);
-      set({ error: err.response?.data?.message || 'Failed to fetch notes', isLoading: false });
+      set({ error: err.response?.data?.message || 'Failed to fetch notes', isNotesLoading: false });
     }
   },
 
@@ -111,15 +110,14 @@ export const useCharacterStore = create((set, get) => ({
   upsertNote: async ({ noteId, characterId, content }) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.put('/notes', { noteId, characterId, content });
+      const data = await noteService.upsert({ noteId, characterId, content });
       
-      // Refresh notes list for this character
       if (characterId) {
         await get().fetchNotes(characterId);
       }
       
       set({ isLoading: false });
-      return response.data.note;
+      return data.note;
     } catch (err) {
       console.error('upsertNote error:', err);
       const errMsg = err.response?.data?.message || 'Failed to save note';
@@ -132,9 +130,8 @@ export const useCharacterStore = create((set, get) => ({
   deleteNote: async (noteId, characterId) => {
     set({ isLoading: true, error: null });
     try {
-      await api.delete(`/notes/${noteId}`);
+      await noteService.delete(noteId);
       
-      // Refresh notes list for this character
       if (characterId) {
         await get().fetchNotes(characterId);
       }

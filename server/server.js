@@ -37,18 +37,15 @@ app.use('/api/assessments', assessmentRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/admin', adminRoutes);
 
+const errorHandler = require('./middleware/errorHandler');
+
 // 404 Route handler
 app.use((req, res, next) => {
   res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
 
 // Centralized error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled Server Error:', err.stack);
-  res.status(500).json({
-    message: err.message || 'An internal server error occurred'
-  });
-});
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Character Coach Server running on port ${PORT}`);
