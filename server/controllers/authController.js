@@ -105,7 +105,8 @@ exports.googleLogin = async (req, res) => {
         name: user.name,
         picture: user.picture,
         profile: user.profile,
-        role: user.role
+        role: user.role,
+        policyAcknowledged: user.policyAcknowledged
       }
     });
   } catch (err) {
@@ -202,11 +203,38 @@ exports.getMe = async (req, res) => {
         name: user.name,
         picture: user.picture,
         profile: user.profile,
-        role: user.role
+        role: user.role,
+        policyAcknowledged: user.policyAcknowledged
       }
     });
   } catch (err) {
     console.error('getMe error:', err);
     res.status(500).json({ message: 'Server error fetching credentials' });
+  }
+};
+
+exports.acknowledgePolicy = async (req, res) => {
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { policyAcknowledged: true },
+      include: { profile: true }
+    });
+
+    res.status(200).json({
+      message: 'Policy acknowledged successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        picture: updatedUser.picture,
+        profile: updatedUser.profile,
+        role: updatedUser.role,
+        policyAcknowledged: updatedUser.policyAcknowledged
+      }
+    });
+  } catch (err) {
+    console.error('acknowledgePolicy error:', err);
+    res.status(500).json({ message: 'Failed to acknowledge policy' });
   }
 };
