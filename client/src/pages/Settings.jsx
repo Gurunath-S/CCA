@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { profileService } from '../services/profile.service';
+import { generatePDFReport } from '../utils/pdfGenerator';
 import PrivacyPolicyDialog from '../components/PrivacyPolicyDialog';
 
 const themes = [
@@ -77,20 +78,13 @@ const Settings = () => {
     setSuccessMsg('');
     try {
       const data = await profileService.exportData(accessToken);
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `character-coach-data-${user.id}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setSuccessMsg('Your data has been successfully compiled and downloaded!');
+      generatePDFReport(data);
+      setSuccessMsg('Your personal progress report PDF has been successfully compiled and downloaded!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
-      setSuccessMsg('Failed to export your data. Please try again.');
+      setSuccessMsg('Failed to compile your PDF report. Please try again.');
+      setTimeout(() => setSuccessMsg(''), 5000);
     } finally {
       setExporting(false);
     }
@@ -506,10 +500,10 @@ const Settings = () => {
                   <Paper className="p-5 border border-themeBorder bg-themePaper/50 rounded-2xl flex flex-col justify-between h-full space-y-4">
                     <Box className="space-y-2">
                       <Typography variant="subtitle2" className="font-bold text-sm text-themeText">
-                        Download My Data
+                        Export PDF Report
                       </Typography>
                       <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
-                        Download a complete history of your self-assessments, custom attributes, and journal notes in JSON format.
+                        Download a beautifully formatted PDF report containing all your assessments and journal reflections.
                       </Typography>
                     </Box>
                     <Button
@@ -519,7 +513,7 @@ const Settings = () => {
                       startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
                       className="rounded-xl border-orange-500/50 text-orange-500 hover:bg-orange-500/10 text-xs py-2 w-full text-center normal-case font-semibold"
                     >
-                      {exporting ? 'Exporting...' : 'Export Data (JSON)'}
+                      {exporting ? 'Generating...' : 'Export Report (PDF)'}
                     </Button>
                   </Paper>
                 </Grid>
