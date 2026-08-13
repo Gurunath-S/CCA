@@ -176,60 +176,119 @@ const Dashboard = () => {
   const calculateStreak = () => {
     if (history.length === 0) return { current: 0, best: 0 };
     
-    // Get sorted unique dates (YYYY-MM-DD) in ascending order (oldest first)
-    const dates = history
-      .map(item => dayjs(item.assessmentDate).format('YYYY-MM-DD'))
-      .filter((value, index, self) => self.indexOf(value) === index)
-      .sort((a, b) => new Date(a) - new Date(b));
+    const streakType = user?.profile?.streakType || 'Daily';
+    const isWeekly = streakType === 'Weekly';
 
-    let best = 0;
-    let tempStreak = 0;
-    let prevDate = null;
+    if (isWeekly) {
+      // Group dates by week (start of week) to check consecutive weeks
+      const weeks = history
+        .map(item => dayjs(item.assessmentDate).startOf('week').format('YYYY-MM-DD'))
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .sort((a, b) => new Date(a) - new Date(b));
 
-    for (let i = 0; i < dates.length; i++) {
-      const currentDate = dayjs(dates[i]);
-      if (prevDate === null) {
-        tempStreak = 1;
-      } else {
-        const diff = currentDate.diff(prevDate, 'day');
-        if (diff === 1) {
-          tempStreak++;
-        } else if (diff > 1) {
-          if (tempStreak > best) {
-            best = tempStreak;
-          }
-          tempStreak = 1; // reset streak
-        }
-      }
-      prevDate = currentDate;
-    }
-    if (tempStreak > best) {
-      best = tempStreak;
-    }
+      let best = 0;
+      let tempStreak = 0;
+      let prevWeek = null;
 
-    // Calculate current active streak (must end today or yesterday)
-    let current = 0;
-    const descDates = [...dates].sort((a, b) => new Date(b) - new Date(a)); // today first
-    const today = dayjs().format('YYYY-MM-DD');
-    const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
-
-    if (descDates[0] === today || descDates[0] === yesterday) {
-      let expectedDate = dayjs(descDates[0]);
-      for (let i = 0; i < descDates.length; i++) {
-        const currentDate = dayjs(descDates[i]);
-        const diff = expectedDate.diff(currentDate, 'day');
-        if (diff === 0) {
-          current++;
-          expectedDate = expectedDate.subtract(1, 'day');
+      for (let i = 0; i < weeks.length; i++) {
+        const currentWeek = dayjs(weeks[i]);
+        if (prevWeek === null) {
+          tempStreak = 1;
         } else {
-          break;
+          const diff = currentWeek.diff(prevWeek, 'week');
+          if (diff === 1) {
+            tempStreak++;
+          } else if (diff > 1) {
+            if (tempStreak > best) {
+              best = tempStreak;
+            }
+            tempStreak = 1; // reset streak
+          }
+        }
+        prevWeek = currentWeek;
+      }
+      if (tempStreak > best) {
+        best = tempStreak;
+      }
+
+      // Calculate current active streak (must end this week or last week)
+      let current = 0;
+      const descWeeks = [...weeks].sort((a, b) => new Date(b) - new Date(a));
+      const thisWeek = dayjs().startOf('week').format('YYYY-MM-DD');
+      const lastWeek = dayjs().subtract(1, 'week').startOf('week').format('YYYY-MM-DD');
+
+      if (descWeeks[0] === thisWeek || descWeeks[0] === lastWeek) {
+        let expectedWeek = dayjs(descWeeks[0]);
+        for (let i = 0; i < descWeeks.length; i++) {
+          const currentWeek = dayjs(descWeeks[i]);
+          const diff = expectedWeek.diff(currentWeek, 'week');
+          if (diff === 0) {
+            current++;
+            expectedWeek = expectedWeek.subtract(1, 'week');
+          } else {
+            break;
+          }
         }
       }
-    }
 
-    return { current, best: Math.max(best, current) };
+      return { current, best: Math.max(best, current) };
+    } else {
+      // Get sorted unique dates (YYYY-MM-DD) in ascending order (oldest first)
+      const dates = history
+        .map(item => dayjs(item.assessmentDate).format('YYYY-MM-DD'))
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .sort((a, b) => new Date(a) - new Date(b));
+
+      let best = 0;
+      let tempStreak = 0;
+      let prevDate = null;
+
+      for (let i = 0; i < dates.length; i++) {
+        const currentDate = dayjs(dates[i]);
+        if (prevDate === null) {
+          tempStreak = 1;
+        } else {
+          const diff = currentDate.diff(prevDate, 'day');
+          if (diff === 1) {
+            tempStreak++;
+          } else if (diff > 1) {
+            if (tempStreak > best) {
+              best = tempStreak;
+            }
+            tempStreak = 1; // reset streak
+          }
+        }
+        prevDate = currentDate;
+      }
+      if (tempStreak > best) {
+        best = tempStreak;
+      }
+
+      // Calculate current active streak (must end today or yesterday)
+      let current = 0;
+      const descDates = [...dates].sort((a, b) => new Date(b) - new Date(a)); // today first
+      const today = dayjs().format('YYYY-MM-DD');
+      const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+
+      if (descDates[0] === today || descDates[0] === yesterday) {
+        let expectedDate = dayjs(descDates[0]);
+        for (let i = 0; i < descDates.length; i++) {
+          const currentDate = dayjs(descDates[i]);
+          const diff = expectedDate.diff(currentDate, 'day');
+          if (diff === 0) {
+            current++;
+            expectedDate = expectedDate.subtract(1, 'day');
+          } else {
+            break;
+          }
+        }
+      }
+
+      return { current, best: Math.max(best, current) };
+    }
   };
 
+  const streakType = user?.profile?.streakType || 'Daily';
   const { current: currentStreak, best: bestStreak } = calculateStreak();
 
   // 3. Most Practiced Character
@@ -374,15 +433,15 @@ const Dashboard = () => {
                 <CardContent className="p-6 flex items-center justify-between h-full">
                   <Box className="flex flex-col">
                     <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                      Current Streak
+                      Current Streak ({streakType})
                     </Typography>
                     <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
-                      {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'}
+                      {currentStreak} {currentStreak === 1 ? (streakType === 'Weekly' ? 'Week' : 'Day') : (streakType === 'Weekly' ? 'Weeks' : 'Days')}
                     </Typography>
                     <Box className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-full px-2.5 py-0.5 w-fit">
                       <FireIcon sx={{ fontSize: 12 }} className="text-amber-500" />
                       <Typography variant="caption" className="text-amber-600 dark:text-amber-400 font-semibold tracking-tight">
-                        Best: {bestStreak} {bestStreak === 1 ? 'day' : 'days'}
+                        Best: {bestStreak} {bestStreak === 1 ? (streakType === 'Weekly' ? 'week' : 'day') : (streakType === 'Weekly' ? 'weeks' : 'days')}
                       </Typography>
                     </Box>
                   </Box>
