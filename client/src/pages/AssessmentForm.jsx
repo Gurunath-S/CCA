@@ -204,7 +204,7 @@ const AssessmentForm = () => {
                       max={5}
                       step={1}
                       marks={[
-                        { value: 1, label: '1 - Disaligned' },
+                        { value: 1, label: '1 - Not Aligned' },
                         { value: 2, label: '2' },
                         { value: 3, label: '3 - Neutral' },
                         { value: 4, label: '4' },
