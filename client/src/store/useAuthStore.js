@@ -123,11 +123,12 @@ export const useAuthStore = create((set, get) => {
       }
     },
 
-    updateProfile: async (ageGroup, theme) => {
+    updateProfile: async (ageGroup, theme, streakType) => {
       set({ isLoading: true, error: null });
       try {
         const token = get().accessToken;
-        const data = await profileService.updateProfile({ ageGroup, theme }, token);
+        const currentStreakType = streakType || get().user?.profile?.streakType || 'Daily';
+        const data = await profileService.updateProfile({ ageGroup, theme, streakType: currentStreakType }, token);
         const updatedProfile = data.profile;
         const currentUser = get().user;
         const updatedUser = {
@@ -157,7 +158,90 @@ export const useAuthStore = create((set, get) => {
       if (!currentUser) return;
       
       const ageGroup = currentUser.profile?.ageGroup || '';
-      await get().updateProfile(ageGroup, themeName);
+      const streakType = currentUser.profile?.streakType || 'Daily';
+      await get().updateProfile(ageGroup, themeName, streakType);
+    },
+
+    setStreakType: async (streakType) => {
+      const currentUser = get().user;
+      if (!currentUser) return;
+      
+      const ageGroup = currentUser.profile?.ageGroup || '';
+      const theme = currentUser.profile?.theme || 'Classic';
+      await get().updateProfile(ageGroup, theme, streakType);
+    },
+
+    updateAccount: async (name, email, picture) => {
+      set({ isLoading: true, error: null });
+      try {
+        const token = get().accessToken;
+        const data = await profileService.updateAccount({ name, email, picture }, token);
+        const updatedUser = data.user;
+
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        set({
+          user: updatedUser,
+          isLoading: false
+        });
+
+        return updatedUser;
+      } catch (err) {
+        console.error('Update account error:', err);
+        const errMsg = err.response?.data?.message || 'Failed to update account details.';
+        set({ error: errMsg, isLoading: false });
+        throw new Error(errMsg);
+      }
+    },
+
+    acknowledgePolicy: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const token = get().accessToken;
+        const data = await authService.acknowledgePolicy(token);
+        const { user } = data;
+
+        localStorage.setItem('user', JSON.stringify(user));
+
+        set({
+          user,
+          isLoading: false
+        });
+        return user;
+      } catch (err) {
+        console.error('Acknowledge policy error:', err);
+        const errMsg = err.response?.data?.message || 'Failed to acknowledge privacy policy.';
+        set({ error: errMsg, isLoading: false });
+        throw new Error(errMsg);
+      }
+    },
+
+    deleteAccount: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const token = get().accessToken;
+        await profileService.deleteAccount(token);
+
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        
+        document.documentElement.classList.remove('dark');
+
+        set({
+          accessToken: null,
+          refreshToken: null,
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        });
+      } catch (err) {
+        console.error('Delete account error:', err);
+        const errMsg = err.response?.data?.message || 'Failed to delete account.';
+        set({ error: errMsg, isLoading: false });
+        throw new Error(errMsg);
+      }
     },
 
     refreshSession: async () => {
