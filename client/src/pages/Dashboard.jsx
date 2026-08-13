@@ -48,6 +48,7 @@ import {
 import dayjs from 'dayjs';
 import { FooterNote } from '../components/common/FooterNote';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { DEFAULT_TRAITS } from '../utils/defaultTraits';
 
 // Reusable animation variants — shorter duration for low-end device friendliness
 const fadeUp = {
@@ -328,6 +329,24 @@ const Dashboard = () => {
 
   const topImproving = getTopImproving();
 
+  // Daily Trait Insight selection
+  const getDailyTrait = () => {
+    let indexStr = sessionStorage.getItem('loginTraitIndex');
+    if (!indexStr) {
+      indexStr = Math.floor(Math.random() * DEFAULT_TRAITS.length).toString();
+      sessionStorage.setItem('loginTraitIndex', indexStr);
+    }
+    return DEFAULT_TRAITS[parseInt(indexStr, 10)];
+  };
+
+  const dailyTrait = getDailyTrait();
+  const getCleanName = (fullName) => {
+    return fullName.split('(')[0].trim().toLowerCase();
+  };
+  const matchedCharacter = characters.find(c =>
+    getCleanName(c.name) === getCleanName(dailyTrait.name)
+  );
+
   // 6. Filtered Progress Chart Data according to selected time range
   const getFilteredDashHistory = () => {
     if (history.length === 0) return [];
@@ -478,11 +497,13 @@ const Dashboard = () => {
 
       {/* Main Grid Content */}
       <Grid container spacing={3}>
-        {/* Progress Charts summary */}
+        {/* Left Column: Progress Chart & Recent Activities */}
         <Grid item xs={12} lg={8}>
-          <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible" style={{ height: '100%' }}>
-          <Card className="h-full">
-            <CardContent className="p-6">
+          <Box className="space-y-6">
+            {/* Progress Charts summary */}
+            <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible">
+            <Card>
+              <CardContent className="p-6">
               <Box className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
                   Recent Alignment Trend
@@ -616,13 +637,104 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           </motion.div>
-        </Grid>
 
-        {/* Quick Start & Improving list */}
-        <Grid item xs={12} lg={4}>
-          <Box className="space-y-6 h-full flex flex-col justify-between">
-            {/* Quick Start Card */}
+          {/* Recent Activity Logs */}
+          <motion.div variants={fadeUp} custom={7} initial="hidden" animate="visible">
+          <Card>
+            <CardContent className="p-6">
+              <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
+                Recent Activities
+              </Typography>
+              {recentActivity.length === 0 ? (
+                <Typography variant="caption" className="text-slate-400 block text-center py-6">
+                  No recent assessment activity recorded.
+                </Typography>
+              ) : (
+                <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+                  <List className="divide-y divide-slate-100 dark:divide-slate-900 p-0">
+                    {recentActivity.map((activity, idx) => (
+                      <motion.div key={activity.id} variants={fadeUp} custom={idx}>
+                        <ListItem className="px-0 py-3 flex justify-between items-center gap-4">
+                          <ListItemText
+                            primary={activity.character.name}
+                            secondary={`Checked: ${dayjs(activity.assessmentDate).format('YYYY-MM-DD')} • "${activity.effortLevel}"`}
+                            primaryTypographyProps={{ className: 'font-bold text-sm text-slate-800 dark:text-slate-100' }}
+                            secondaryTypographyProps={{ className: 'text-xs text-slate-400 mt-0.5' }}
+                          />
+                          <Chip
+                            label={`Score: ${activity.alignmentScore}`}
+                            size="small"
+                            color={activity.alignmentScore >= 4 ? 'success' : activity.alignmentScore >= 3 ? 'primary' : 'warning'}
+                            className="font-semibold text-xs rounded-lg"
+                          />
+                        </ListItem>
+                      </motion.div>
+                    ))}
+                  </List>
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+          </motion.div>
+        </Box>
+      </Grid>
+
+      {/* Right Column: Daily Trait, Quick Start & Improving list */}
+      <Grid item xs={12} lg={4}>
+        <Box className="space-y-6">
+            {/* Daily Trait Insight Card */}
             <motion.div variants={fadeUp} custom={4} initial="hidden" animate="visible">
+              <Card className="border border-orange-500/10 dark:border-orange-500/20 bg-gradient-to-br from-white to-orange-500/[0.02] dark:from-slate-900 dark:to-orange-500/[0.01]">
+                <CardContent className="p-6 space-y-4">
+                  <Box className="flex items-center gap-2.5">
+                    <Box className="p-2 bg-orange-500/10 rounded-xl text-orange-500 flex items-center justify-center">
+                      <SpaIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Typography variant="subtitle2" className="font-bold text-orange-500 tracking-wide uppercase text-[0.7rem]">
+                      Daily Trait Insight
+                    </Typography>
+                  </Box>
+                  <Box className="space-y-1.5">
+                    <Box className="flex items-center justify-between gap-2">
+                      <Typography variant="h5" className="font-serif font-bold text-slate-800 dark:text-slate-100 truncate">
+                        {dailyTrait.name}
+                      </Typography>
+                      <Chip
+                        label={`${dailyTrait.category}`}
+                        size="small"
+                        color={dailyTrait.category === 'Yama' ? 'primary' : dailyTrait.category === 'Niyama' ? 'secondary' : 'default'}
+                        className="font-semibold text-[0.65rem] px-1 h-5"
+                      />
+                    </Box>
+                    <Typography variant="body2" className="text-slate-500 dark:text-slate-400 italic leading-relaxed text-xs">
+                      “{dailyTrait.description}”
+                    </Typography>
+                  </Box>
+                  {matchedCharacter ? (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => navigate(`/assess/${matchedCharacter.id}`)}
+                      className="text-orange-500 border-orange-500/30 hover:border-orange-500 hover:bg-orange-500/5 rounded-xl text-xs py-1.5 capitalize font-semibold"
+                    >
+                      Assess Today's Trait
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => navigate('/characters')}
+                      className="text-orange-500 border-orange-500/30 hover:border-orange-500 hover:bg-orange-500/5 rounded-xl text-xs py-1.5 capitalize font-semibold"
+                    >
+                      Explore Attributes
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Quick Start Card */}
+            <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible">
             <Card>
               <CardContent className="p-6 space-y-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
@@ -660,7 +772,7 @@ const Dashboard = () => {
             </motion.div>
 
             {/* Improving Traits Card */}
-            <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible" style={{ flexGrow: 1 }}>
+            <motion.div variants={fadeUp} custom={6} initial="hidden" animate="visible" style={{ flexGrow: 1 }}>
             <Card className="flex-grow">
               <CardContent className="p-6">
                 <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
@@ -696,45 +808,6 @@ const Dashboard = () => {
           </Box>
         </Grid>
       </Grid>
-
-      {/* Recent Activity Logs */}
-      <motion.div variants={fadeUp} custom={6} initial="hidden" animate="visible">
-      <Card>
-        <CardContent className="p-6">
-          <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
-            Recent Activities
-          </Typography>
-          {recentActivity.length === 0 ? (
-            <Typography variant="caption" className="text-slate-400 block text-center py-6">
-              No recent assessment activity recorded.
-            </Typography>
-          ) : (
-            <motion.div variants={staggerContainer} initial="hidden" animate="visible">
-              <List className="divide-y divide-slate-100 dark:divide-slate-900 p-0">
-                {recentActivity.map((activity, idx) => (
-                  <motion.div key={activity.id} variants={fadeUp} custom={idx}>
-                    <ListItem className="px-0 py-3 flex justify-between items-center gap-4">
-                      <ListItemText
-                        primary={activity.character.name}
-                        secondary={`Checked: ${dayjs(activity.assessmentDate).format('YYYY-MM-DD')} • "${activity.effortLevel}"`}
-                        primaryTypographyProps={{ className: 'font-bold text-sm text-slate-800 dark:text-slate-100' }}
-                        secondaryTypographyProps={{ className: 'text-xs text-slate-400 mt-0.5' }}
-                      />
-                      <Chip
-                        label={`Score: ${activity.alignmentScore}`}
-                        size="small"
-                        color={activity.alignmentScore >= 4 ? 'success' : activity.alignmentScore >= 3 ? 'primary' : 'warning'}
-                        className="font-semibold text-xs rounded-lg"
-                      />
-                    </ListItem>
-                  </motion.div>
-                ))}
-              </List>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
-      </motion.div>
 
       {/* Home Page Footer Note */}
       <FooterNote />

@@ -25,10 +25,15 @@ const LoginTraitPopup = () => {
     // Only trigger if user exists, has acknowledged the policy, and the popup hasn't been shown in this tab session
     if (user && user.policyAcknowledged) {
       const shown = sessionStorage.getItem('loginTraitPopupShown');
+      let indexStr = sessionStorage.getItem('loginTraitIndex');
+      if (!indexStr) {
+        indexStr = Math.floor(Math.random() * DEFAULT_TRAITS.length).toString();
+        sessionStorage.setItem('loginTraitIndex', indexStr);
+      }
+      const selectedTrait = DEFAULT_TRAITS[parseInt(indexStr, 10)];
+      setTrait(selectedTrait);
+
       if (!shown) {
-        // Select a random character trait
-        const randomIndex = Math.floor(Math.random() * DEFAULT_TRAITS.length);
-        setTrait(DEFAULT_TRAITS[randomIndex]);
         setOpen(true);
         sessionStorage.setItem('loginTraitPopupShown', 'true');
       }
