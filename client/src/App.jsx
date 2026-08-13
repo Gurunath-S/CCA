@@ -14,6 +14,7 @@ import { useAuthStore } from './store/useAuthStore';
 // Components & Layouts
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
+import PolicyAcknowledgmentDialog from './components/PolicyAcknowledgmentDialog';
 
 // Pages - Lazy Loaded for 100% navigation and load performance
 const Login = lazy(() => import('./pages/Login'));
@@ -39,6 +40,7 @@ function App() {
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <PolicyAcknowledgmentDialog />
         <Suspense fallback={
           <Box className="flex flex-col items-center justify-center min-h-screen bg-themeBg theme-transition">
             <CircularProgress className="text-orange-500" />
