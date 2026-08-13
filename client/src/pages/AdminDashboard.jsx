@@ -13,19 +13,11 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
-  TableHead,
   Paper,
-  Avatar,
   Button,
   Chip,
   CircularProgress,
-  Alert,
-  Skeleton
+  Alert
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,6 +26,18 @@ import {
   Book as NotesIcon,
   Add as AddIcon
 } from '@mui/icons-material';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Cell
+} from 'recharts';
 
 const AdminDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -43,16 +47,7 @@ const AdminDashboard = () => {
   const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
   const [error, setError] = useState('');
 
-  // User list filters
-  const [userSearch, setUserSearch] = useState('');
-  const [userAgeFilter, setUserAgeFilter] = useState('All');
-
-  // Infinite scroll state
-  const [userPage, setUserPage] = useState(0);
-  const userRowsPerPage = 8; // fixed page size for infinite scroll
-  const [displayedUsers, setDisplayedUsers] = useState([]);
-  const [isScrollLoading, setIsScrollLoading] = useState(false);
-  const tableContainerRef = React.useRef(null);
+  // We no longer need user list filters or infinite scroll state
 
   // New Attribute Form
   const [newAttrName, setNewAttrName] = useState('');
@@ -138,48 +133,47 @@ const AdminDashboard = () => {
     }
   };
 
-  // Filter local users list
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch = 
-      u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email?.toLowerCase().includes(userSearch.toLowerCase());
+  // Generate registration trend chronologically
+  const getRegistrationTrendData = () => {
+    const counts = {};
+    users.forEach(u => {
+      const dateStr = new Date(u.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      counts[dateStr] = (counts[dateStr] || 0) + 1;
+    });
     
-    const matchesAge = 
-      userAgeFilter === 'All' || 
-      u.profile?.ageGroup === userAgeFilter;
-
-    return matchesSearch && matchesAge;
-  });
-
-  // Handle container scroll for infinite scroll pagination
-  const handleScroll = (e) => {
-    const container = e.currentTarget;
-    if (!container) return;
-
-    // Check if scroll position is near the bottom
-    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
-
-    if (isAtBottom && !isLoadingUsers && !isScrollLoading && displayedUsers.length < filteredUsers.length) {
-      setIsScrollLoading(true);
-      setTimeout(() => {
-        setUserPage((prevPage) => prevPage + 1);
-        setIsScrollLoading(false);
-      }, 500); // simulated load delay for premium skeleton loading transition
-    }
+    return Object.keys(counts).map(date => ({
+      date,
+      count: counts[date]
+    })).reverse();
   };
 
-  // Reset page and displayed users when search parameters or complete list of users changes
-  useEffect(() => {
-    setUserPage(0);
-    setDisplayedUsers(filteredUsers.slice(0, userRowsPerPage));
-  }, [userSearch, userAgeFilter, users]);
-
-  // Load more users when page increases
-  useEffect(() => {
-    if (userPage > 0) {
-      setDisplayedUsers(filteredUsers.slice(0, (userPage + 1) * userRowsPerPage));
-    }
-  }, [userPage, filteredUsers]);
+  // Generate age group distribution
+  const getAgeDistributionData = () => {
+    const groups = {
+      '15–20': 0,
+      '20–25': 0,
+      '25–30': 0,
+      '30–40': 0,
+      '40–50': 0,
+      '50–60': 0,
+      'Above 60': 0,
+      'N/A': 0
+    };
+    
+    users.forEach(u => {
+      const age = u.profile?.ageGroup || 'N/A';
+      if (groups[age] !== undefined) {
+        groups[age]++;
+      } else {
+        groups['N/A']++;
+      }
+    });
+    
+    return Object.keys(groups).map(name => ({
+      name,
+      count: groups[name]
+    }));
+  };
 
   // Filter global attributes list
   const filteredGlobalAttributes = globalAttributes.filter((attr) => {
@@ -266,7 +260,7 @@ const AdminDashboard = () => {
       {/* Tabs */}
       <Box className="border-b border-slate-200 dark:border-slate-800">
         <Tabs value={tabValue} onChange={(e, val) => setTabValue(val)} color="primary">
-          <Tab label="All Users" className="font-semibold text-sm py-3" />
+          <Tab label="Analytics & Trends" className="font-semibold text-sm py-3" />
           <Tab label="Global Attributes Manager" className="font-semibold text-sm py-3" />
         </Tabs>
       </Box>
@@ -278,144 +272,91 @@ const AdminDashboard = () => {
         </Alert>
       )}
 
-      {/* Tab 1: Users & Usage */}
+      {/* Tab 1: User Analytics & Trends */}
       {tabValue === 0 && (
-        <Box className="space-y-4">
-          {/* User Filtering Tools */}
-          <Card className="shadow-sm border border-slate-100 dark:border-slate-800">
-            <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-              <TextField
-                placeholder="Search by name or email..."
-                variant="outlined"
-                size="small"
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full md:max-w-md bg-white/50 dark:bg-slate-800/30 rounded-xl"
-                slotProps={{
-                  input: {
-                    className: 'rounded-xl',
-                    startAdornment: (
-                      <SearchIcon className="text-slate-400 mr-2" />
-                    )
-                  }
-                }}
-              />
+        <Grid container spacing={3}>
+          {/* Signups Trend Chart */}
+          <Grid item xs={12} md={7}>
+            <Card className="shadow-md bg-white/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
+                  User Registration Trend
+                </Typography>
+                {isLoadingUsers ? (
+                  <Box className="flex justify-center items-center h-[260px]">
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : users.length === 0 ? (
+                  <Box className="flex justify-center items-center h-[260px] text-slate-400 text-sm">
+                    No signup data available.
+                  </Box>
+                ) : (
+                  <Box className="h-[260px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={getRegistrationTrendData()}>
+                        <defs>
+                          <linearGradient id="colorSignups" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                        <XAxis dataKey="date" tickLine={false} tick={{ fontSize: 10 }} />
+                        <YAxis allowDecimals={false} tickLine={false} tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Area
+                          type="monotone"
+                          dataKey="count"
+                          name="Signups"
+                          stroke="#3b82f6"
+                          strokeWidth={2.5}
+                          fillOpacity={1}
+                          fill="url(#colorSignups)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
 
-              <Box className="flex items-center gap-2 w-full md:w-auto">
-                <FormControl size="small" className="min-w-[150px] w-full md:w-auto">
-                  <InputLabel>Age Group</InputLabel>
-                  <Select
-                    value={userAgeFilter}
-                    onChange={(e) => setUserAgeFilter(e.target.value)}
-                    label="Age Group"
-                    className="rounded-xl"
-                  >
-                    <MenuItem value="All">All Age Groups</MenuItem>
-                    <MenuItem value="15–20">15–20</MenuItem>
-                    <MenuItem value="20–25">20–25</MenuItem>
-                    <MenuItem value="25–30">25–30</MenuItem>
-                    <MenuItem value="30–40">30–40</MenuItem>
-                    <MenuItem value="40–50">40–50</MenuItem>
-                    <MenuItem value="50–60">50–60</MenuItem>
-                    <MenuItem value="Above 60">Above 60</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            </CardContent>
-          </Card>
-          
-          {/* Users Table */}
-          <TableContainer
-            component={Paper}
-            className="shadow-md rounded-2xl border border-slate-100 dark:border-slate-800 max-h-[550px] overflow-y-auto scrollbar-thin"
-            ref={tableContainerRef}
-            onScroll={handleScroll}
-          >
-            <Table>
-              <TableHead className="bg-slate-50 dark:bg-slate-900/50">
-                <TableRow>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">User</TableCell>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Role</TableCell>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Age Group</TableCell>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Date Joined</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {isLoadingUsers
-                  ? Array.from({ length: userRowsPerPage }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Box className="flex items-center gap-3">
-                            <Skeleton variant="circular" width={38} height={38} />
-                            <Box className="flex flex-col gap-1">
-                              <Skeleton variant="text" width={120} height={14} />
-                              <Skeleton variant="text" width={160} height={12} />
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell><Skeleton variant="rounded" width={60} height={22} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={70} height={14} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={90} height={14} /></TableCell>
-                      </TableRow>
-                    ))
-                  : displayedUsers.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-10 text-slate-400">
-                          No users match the search criteria.
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : displayedUsers.map((userItem) => (
-                      <TableRow
-                        key={userItem.id}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors cursor-default"
-                      >
-                        <TableCell>
-                          <Box className="flex items-center gap-3">
-                            <Avatar src={userItem.picture} alt={userItem.name} sx={{ width: 38, height: 38 }} />
-                            <Box>
-                              <Typography className="font-semibold text-sm text-slate-800 dark:text-slate-200">{userItem.name || 'Anonymous'}</Typography>
-                              <Typography variant="caption" className="text-slate-400 block">{userItem.email}</Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={userItem.role}
-                            size="small"
-                            color={userItem.role === 'ADMIN' ? 'error' : 'default'}
-                            className="rounded-full text-xs font-semibold"
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm font-medium text-slate-600 dark:text-slate-400">{userItem.profile?.ageGroup || 'N/A'}</TableCell>
-                        <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                          {new Date(userItem.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                }
-                {/* Simulated scroll loading skeleton rows */}
-                {!isLoadingUsers && isScrollLoading && Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={`scroll-skeleton-${i}`}>
-                    <TableCell>
-                      <Box className="flex items-center gap-3">
-                        <Skeleton variant="circular" width={38} height={38} />
-                        <Box className="flex flex-col gap-1">
-                          <Skeleton variant="text" width={120} height={14} />
-                          <Skeleton variant="text" width={160} height={12} />
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell><Skeleton variant="rounded" width={60} height={22} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={70} height={14} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={90} height={14} /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+          {/* Age Group Distribution Chart */}
+          <Grid item xs={12} md={5}>
+            <Card className="shadow-md bg-white/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
+                  Age Group Distribution
+                </Typography>
+                {isLoadingUsers ? (
+                  <Box className="flex justify-center items-center h-[260px]">
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : users.length === 0 ? (
+                  <Box className="flex justify-center items-center h-[260px] text-slate-400 text-sm">
+                    No age group data available.
+                  </Box>
+                ) : (
+                  <Box className="h-[260px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={getAgeDistributionData()}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                        <XAxis dataKey="name" tickLine={false} tick={{ fontSize: 10 }} />
+                        <YAxis allowDecimals={false} tickLine={false} tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Bar dataKey="count" name="Users" fill="#f97316" radius={[6, 6, 0, 0]}>
+                          {getAgeDistributionData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#f97316' : '#ea580c'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
 
       {/* Tab 2: Global Attributes Manager */}
