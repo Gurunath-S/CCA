@@ -30,7 +30,7 @@ const UserProfileSetup = () => {
   const navigate = useNavigate();
 
   const handleAgeSelect = (age) => {
-    setSelectedAge(age);
+    setSelectedAge(prev => prev === age ? '' : age);
   };
 
   const handleSave = async () => {
