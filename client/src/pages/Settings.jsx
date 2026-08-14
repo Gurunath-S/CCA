@@ -56,9 +56,9 @@ const ageGroups = ['15–20', '20–25', '25–30', '30–40', '40–50', '50–
 
 const Settings = () => {
   const { user, updateProfile, updateAccount, setTheme, deleteAccount, accessToken } = useAuthStore();
-  const [selectedAge, setSelectedAge] = useState(user?.profile?.ageGroup || '');
-  const [activeTheme, setActiveTheme] = useState(user?.profile?.theme || 'Classic');
-  const [selectedStreak, setSelectedStreak] = useState(user?.profile?.streakType || 'Daily');
+  const selectedAge = user?.profile?.ageGroup || '';
+  const activeTheme = user?.profile?.theme || 'Classic';
+  const selectedStreak = user?.profile?.streakType || '';
   const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -103,16 +103,34 @@ const Settings = () => {
     }
   };
 
-  const handleSaveProfile = async () => {
+  const handleAgeChange = async (age) => {
     setIsLoading(true);
     setSuccessMsg('');
+    const newAge = selectedAge === age ? '' : age;
     try {
-      await updateProfile(selectedAge, activeTheme, selectedStreak);
-      setSuccessMsg('Profile details updated successfully!');
+      await updateProfile(newAge, activeTheme, selectedStreak);
+      setSuccessMsg('Age group updated successfully!');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
-      setSuccessMsg(err.message || 'Failed to update profile.');
+      setSuccessMsg(err.message || 'Failed to update age group.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStreakChange = async (streak) => {
+    setIsLoading(true);
+    setSuccessMsg('');
+    const newStreak = selectedStreak === streak ? '' : streak;
+    try {
+      await updateProfile(selectedAge, activeTheme, newStreak);
+      setSuccessMsg('Streak calculation mode updated successfully!');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err) {
+      console.error(err);
+      setSuccessMsg(err.message || 'Failed to update streak calculation mode.');
       setTimeout(() => setSuccessMsg(''), 5000);
     } finally {
       setIsLoading(false);
@@ -152,7 +170,6 @@ const Settings = () => {
   };
 
   const handleThemeChange = async (themeName) => {
-    setActiveTheme(themeName);
     try {
       await setTheme(themeName);
       setSuccessMsg(`Theme changed to ${themeName}!`);
@@ -340,7 +357,7 @@ const Settings = () => {
                     return (
                       <Grid item xs={6} sm={4} key={age}>
                         <Paper
-                          onClick={() => setSelectedAge(age)}
+                          onClick={() => handleAgeChange(age)}
                           elevation={0}
                           className={`p-2.5 text-center cursor-pointer border rounded-xl transition-all ${
                             isSelected
@@ -373,7 +390,7 @@ const Settings = () => {
                     return (
                       <Grid item xs={6} key={item.mode}>
                         <Paper
-                          onClick={() => setSelectedStreak(item.mode)}
+                          onClick={() => handleStreakChange(item.mode)}
                           elevation={0}
                           className={`p-3 text-center cursor-pointer border rounded-xl transition-all ${
                             isSelected
@@ -393,15 +410,6 @@ const Settings = () => {
                   })}
                 </Grid>
               </Box>
-
-              <Button
-                variant="contained"
-                onClick={handleSaveProfile}
-                disabled={isLoading}
-                className="mt-6 bg-orange-500 hover:bg-orange-600 rounded-xl text-white font-medium"
-              >
-                {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Save Profile Details'}
-              </Button>
             </CardContent>
           </Card>
         </Grid>
