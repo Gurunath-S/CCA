@@ -193,6 +193,7 @@ const MainLayout = ({ children }) => {
       {/* Sidebar for Desktop */}
       {!isMobile && (
         <Box 
+          id="tour-sidebar"
           component="nav" 
           sx={{ width: drawerWidth, flexShrink: 0 }}
           className="h-screen sticky top-0 border-r border-themeBorder bg-themeSidebar"
