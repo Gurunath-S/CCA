@@ -345,12 +345,14 @@ const Dashboard = () => {
 
   // Daily Trait Insight selection
   const getDailyTrait = () => {
-    let indexStr = sessionStorage.getItem('loginTraitIndex');
-    if (!indexStr) {
-      indexStr = Math.floor(Math.random() * DEFAULT_TRAITS.length).toString();
-      sessionStorage.setItem('loginTraitIndex', indexStr);
-    }
-    return DEFAULT_TRAITS[parseInt(indexStr, 10)];
+    // Use the current day of the year to select a trait, ensuring it changes daily but is stable for a single day
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now - start;
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    const index = dayOfYear % DEFAULT_TRAITS.length;
+    return DEFAULT_TRAITS[index];
   };
 
   const dailyTrait = getDailyTrait();
