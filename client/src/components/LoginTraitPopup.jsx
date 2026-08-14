@@ -22,22 +22,44 @@ const LoginTraitPopup = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only trigger if user exists, has acknowledged the policy, and the popup hasn't been shown in this tab session
-    if (user && user.policyAcknowledged) {
-      const shown = sessionStorage.getItem('loginTraitPopupShown');
-      let indexStr = sessionStorage.getItem('loginTraitIndex');
-      if (!indexStr) {
-        indexStr = Math.floor(Math.random() * DEFAULT_TRAITS.length).toString();
-        sessionStorage.setItem('loginTraitIndex', indexStr);
-      }
-      const selectedTrait = DEFAULT_TRAITS[parseInt(indexStr, 10)];
-      setTrait(selectedTrait);
+    const checkAndShowPopup = () => {
+      // Only trigger if user exists and has acknowledged the policy
+      if (user && user.policyAcknowledged) {
+        // Prevent showing daily trait popup if the user has not completed or seen the Help Tour yet
+        const tourCompletedKey = `helpTourCompleted_${user.id}`;
+        const tourCompleted = localStorage.getItem(tourCompletedKey);
+        if (!tourCompleted) {
+          return;
+        }
 
-      if (!shown) {
-        setOpen(true);
-        sessionStorage.setItem('loginTraitPopupShown', 'true');
+        // Use the current day of the year to select a trait, ensuring it matches the Dashboard
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = now - start;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
+        const index = dayOfYear % DEFAULT_TRAITS.length;
+        const selectedTrait = DEFAULT_TRAITS[index];
+        setTrait(selectedTrait);
+
+        // Check if popup has been shown today for this specific user
+        const todayStr = now.toISOString().split('T')[0];
+        const storageKey = `loginTraitPopupShown_${user.id}`;
+        const lastShownDate = localStorage.getItem(storageKey);
+
+        if (lastShownDate !== todayStr) {
+          setOpen(true);
+          localStorage.setItem(storageKey, todayStr);
+        }
       }
-    }
+    };
+
+    checkAndShowPopup();
+
+    window.addEventListener('helpTourClosed', checkAndShowPopup);
+    return () => {
+      window.removeEventListener('helpTourClosed', checkAndShowPopup);
+    };
   }, [user]);
 
   const handleClose = () => {
@@ -49,7 +71,7 @@ const LoginTraitPopup = () => {
     navigate('/characters');
   };
 
-  if (!open || !trait) return null;
+  if (!trait) return null;
 
   // Category chip color helper
   const getCategoryColor = (cat) => {
