@@ -8,7 +8,7 @@ applyPlugin(jsPDF);
  * Compiles user data into a beautifully formatted PDF report.
  * @param {Object} userData - The user data payload returned from the backend export API.
  */
-export const generatePDFReport = (userData) => {
+export const generatePDFReport = (userData, contentSelection = 'all') => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -93,14 +93,16 @@ export const generatePDFReport = (userData) => {
   });
 
   let currentY = doc.lastAutoTable.finalY + 15;
+  let sectionIndex = 2;
 
-  // Custom Attributes Section (Only if present)
-  if (userData.customAttributes && userData.customAttributes.length > 0) {
+  // Custom Attributes Section (Only if present and assessments selected)
+  if ((contentSelection === 'all' || contentSelection === 'assessments') && userData.customAttributes && userData.customAttributes.length > 0) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(...secondaryColor);
-    doc.text('2. Custom Attributes Created', margin, currentY);
+    doc.text(`${sectionIndex}. Custom Attributes Created`, margin, currentY);
     currentY += 5;
+    sectionIndex++;
 
     doc.autoTable({
       startY: currentY,
@@ -135,7 +137,7 @@ export const generatePDFReport = (userData) => {
 
   // --- PAGE 2: ASSESSMENT HISTORY ---
   
-  if (userData.assessments && userData.assessments.length > 0) {
+  if ((contentSelection === 'all' || contentSelection === 'assessments') && userData.assessments && userData.assessments.length > 0) {
     // If not much space left on page 1, push assessments to page 2
     if (currentY > 160) {
       doc.addPage();
@@ -147,8 +149,9 @@ export const generatePDFReport = (userData) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(...secondaryColor);
-    doc.text(userData.customAttributes && userData.customAttributes.length > 0 ? '3. Self-Assessment History' : '2. Self-Assessment History', margin, currentY);
+    doc.text(`${sectionIndex}. Self-Assessment History`, margin, currentY);
     currentY += 5;
+    sectionIndex++;
 
     doc.autoTable({
       startY: currentY,
@@ -188,7 +191,7 @@ export const generatePDFReport = (userData) => {
 
   // --- PAGE 3: JOURNAL NOTES ---
   
-  if (userData.journalNotes && userData.journalNotes.length > 0) {
+  if ((contentSelection === 'all' || contentSelection === 'notes') && userData.journalNotes && userData.journalNotes.length > 0) {
     // Check if we should push journal notes to a new page
     if (currentY > 180) {
       doc.addPage();
@@ -200,12 +203,7 @@ export const generatePDFReport = (userData) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(...secondaryColor);
-    
-    let sectionNum = '3';
-    if (userData.customAttributes && userData.customAttributes.length > 0) {
-      sectionNum = '4';
-    }
-    doc.text(`${sectionNum}. Reflective Journal Notes`, margin, currentY);
+    doc.text(`${sectionIndex}. Reflective Journal Notes`, margin, currentY);
     currentY += 5;
 
     doc.autoTable({
