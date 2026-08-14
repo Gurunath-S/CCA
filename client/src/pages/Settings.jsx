@@ -483,70 +483,70 @@ const Settings = () => {
                 Manage your data privacy and control your account. We prioritize security and guarantee that your personal assessment history and notes are kept private and never used commercially.
               </Typography>
 
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={4}>
-                  <Paper className="p-5 border border-themeBorder bg-themePaper/50 rounded-2xl flex flex-col justify-between h-full space-y-4">
-                    <Box className="space-y-2">
-                      <Typography variant="subtitle2" className="font-bold text-sm text-themeText">
-                        Review Privacy Policy
-                      </Typography>
-                      <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
-                        Read details about our commitment to not sharing, selling, or using your data for commercial reasons.
-                      </Typography>
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setPrivacyOpen(true)}
-                      className="rounded-xl border-orange-500/50 text-orange-500 hover:bg-orange-500/10 text-xs py-2 w-full text-center normal-case font-semibold"
-                    >
-                      Read Policy
-                    </Button>
-                  </Paper>
-                </Grid>
+              <Box className="space-y-4">
+                {/* Review Privacy Policy Row */}
+                <Paper className="p-5 border border-themeBorder bg-themePaper/50 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <Box className="space-y-1 max-w-xl">
+                    <Typography variant="subtitle2" className="font-bold text-sm text-themeText">
+                      Review Privacy Policy
+                    </Typography>
+                    <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
+                      Read details about our commitment to not sharing, selling, or using your data for commercial reasons.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setPrivacyOpen(true)}
+                    sx={{ minWidth: '160px' }}
+                    className="rounded-xl border-orange-500/50 text-orange-500 hover:bg-orange-500/10 text-xs py-2 normal-case font-semibold"
+                  >
+                    Read Policy
+                  </Button>
+                </Paper>
 
-                <Grid item xs={12} sm={4}>
-                  <Paper className="p-5 border border-themeBorder bg-themePaper/50 rounded-2xl flex flex-col justify-between h-full space-y-4">
-                    <Box className="space-y-2">
-                      <Typography variant="subtitle2" className="font-bold text-sm text-themeText">
-                        Export PDF Report
-                      </Typography>
-                      <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
-                        Download a beautifully formatted PDF report containing all your assessments and journal reflections.
-                      </Typography>
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      onClick={handleExportData}
-                      disabled={exporting}
-                      startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
-                      className="rounded-xl border-orange-500/50 text-orange-500 hover:bg-orange-500/10 text-xs py-2 w-full text-center normal-case font-semibold"
-                    >
-                      {exporting ? 'Generating...' : 'Export Report (PDF)'}
-                    </Button>
-                  </Paper>
-                </Grid>
+                {/* Export PDF Report Row */}
+                <Paper className="p-5 border border-themeBorder bg-themePaper/50 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <Box className="space-y-1 max-w-xl">
+                    <Typography variant="subtitle2" className="font-bold text-sm text-themeText">
+                      Export PDF Report
+                    </Typography>
+                    <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
+                      Download a beautifully formatted PDF report containing all your assessments and journal reflections.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    onClick={handleExportData}
+                    disabled={exporting}
+                    startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+                    sx={{ minWidth: '160px' }}
+                    className="rounded-xl border-orange-500/50 text-orange-500 hover:bg-orange-500/10 text-xs py-2 normal-case font-semibold"
+                  >
+                    {exporting ? 'Generating...' : 'Export Report (PDF)'}
+                  </Button>
+                </Paper>
 
-                <Grid item xs={12} sm={4}>
-                  <Paper className="p-5 border border-red-500/20 bg-red-500/5 dark:bg-red-500/10 rounded-2xl flex flex-col justify-between h-full space-y-4">
-                    <Box className="space-y-2">
-                      <Typography variant="subtitle2" className="font-bold text-sm text-red-500 dark:text-red-400">
-                        Delete Account
-                      </Typography>
-                      <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
-                        Permanently delete your profile and erase all assessments and reflective notes from our servers. Irreversible.
-                      </Typography>
-                    </Box>
-                    <Button
-                      variant="contained"
-                      onClick={() => setDeleteDialogOpen(true)}
-                      startIcon={<DeleteIcon />}
-                      className="rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs py-2 w-full text-center normal-case font-semibold shadow-none hover:shadow-none"
-                    >
+                {/* Delete Account Row */}
+                <Paper className="p-5 border border-red-500/20 bg-red-500/5 dark:bg-red-500/10 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <Box className="space-y-1 max-w-xl">
+                    <Typography variant="subtitle2" className="font-bold text-sm text-red-500 dark:text-red-400">
                       Delete Account
-                    </Button>
-                  </Paper>
-                </Grid>
-              </Grid>
+                    </Typography>
+                    <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
+                      Permanently delete your profile and erase all assessments and reflective notes from our servers. Irreversible.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    startIcon={<DeleteIcon />}
+                    sx={{ minWidth: '160px' }}
+                    className="rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs py-2 normal-case font-semibold shadow-none hover:shadow-none"
+                  >
+                    Delete Account
+                  </Button>
+                </Paper>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
