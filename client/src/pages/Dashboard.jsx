@@ -34,7 +34,8 @@ import {
   Timeline as ChartIcon,
   ListAlt as ListIcon,
   PlayArrow as StartIcon,
-  TrendingUp as UpIcon
+  TrendingUp as UpIcon,
+  HelpOutline as HelpIcon
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -49,6 +50,7 @@ import dayjs from 'dayjs';
 import { FooterNote } from '../components/common/FooterNote';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { DEFAULT_TRAITS } from '../utils/defaultTraits';
+import { HelpTour } from '../components/common/HelpTour';
 
 // Reusable animation variants — shorter duration for low-end device friendliness
 const fadeUp = {
@@ -77,6 +79,7 @@ const Dashboard = () => {
   const [dashTimeFilter, setDashTimeFilter] = useState('7days');
   const [dashStartDate, setDashStartDate] = useState('');
   const [dashEndDate, setDashEndDate] = useState('');
+  const [tourOpen, setTourOpen] = useState(false);
 
   const userTheme = user?.profile?.theme || 'Classic';
   const colors = themePalettes[userTheme]?.chartColors || themePalettes.Classic.chartColors;
@@ -85,6 +88,17 @@ const Dashboard = () => {
     fetchCharacters();
     fetchHistory();
   }, [fetchCharacters, fetchHistory]);
+
+  useEffect(() => {
+    if (user && user.profile && user.policyAcknowledged && !isLoading) {
+      const key = `helpTourShown_${user.id}`;
+      const tourShown = localStorage.getItem(key);
+      if (!tourShown) {
+        setTourOpen(true);
+        localStorage.setItem(key, 'true');
+      }
+    }
+  }, [user, isLoading]);
 
   // Loading indicator on first load
   if (isLoading && history.length === 0 && characters.length === 0) {
@@ -389,10 +403,19 @@ const Dashboard = () => {
     }
   };
 
+  const handleTourClose = () => {
+    setTourOpen(false);
+    if (user) {
+      const key = `helpTourCompleted_${user.id}`;
+      localStorage.setItem(key, 'true');
+      window.dispatchEvent(new Event('helpTourClosed'));
+    }
+  };
+
   return (
     <Box className="space-y-6">
       {/* Welcome Banner */}
-      <Card className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5">
+      <Card id="tour-welcome-banner" className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5">
         <Box className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <Box className="space-y-1">
             <Typography variant="h4" className="font-serif font-bold text-slate-800 dark:text-slate-100">
@@ -403,6 +426,24 @@ const Dashboard = () => {
             </Typography>
           </Box>
           <Box className="flex gap-2">
+            <Button
+              variant="outlined"
+              onClick={() => setTourOpen(true)}
+              startIcon={<HelpIcon />}
+              sx={{
+                borderColor: 'rgba(249, 115, 22, 0.3)',
+                color: '#f97316',
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                '&:hover': {
+                  borderColor: '#f97316',
+                  backgroundColor: 'rgba(249, 115, 22, 0.08)'
+                }
+              }}
+            >
+              Take Tour
+            </Button>
             <Button
               variant="contained"
               onClick={() => navigate('/characters')}
@@ -448,7 +489,7 @@ const Dashboard = () => {
           {/* Current Streak */}
           <Grid item xs={12} sm={4}>
             <motion.div variants={fadeUp} custom={1} style={{ height: '100%' }}>
-              <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+              <Card id="tour-stats-streak" className="hover:scale-[1.01] transition-transform duration-300 h-full">
                 <CardContent className="p-6 flex items-center justify-between h-full">
                   <Box className="flex flex-col">
                     <Typography variant="subtitle2" className="text-slate-400 font-medium">
@@ -684,7 +725,7 @@ const Dashboard = () => {
         <Box className="space-y-6">
             {/* Daily Trait Insight Card */}
             <motion.div variants={fadeUp} custom={4} initial="hidden" animate="visible">
-              <Card className="border border-orange-500/10 dark:border-orange-500/20 bg-gradient-to-br from-white to-orange-500/[0.02] dark:from-slate-900 dark:to-orange-500/[0.01]">
+              <Card id="tour-daily-insight" className="border border-orange-500/10 dark:border-orange-500/20 bg-gradient-to-br from-white to-orange-500/[0.02] dark:from-slate-900 dark:to-orange-500/[0.01]">
                 <CardContent className="p-6 space-y-4">
                   <Box className="flex items-center gap-2.5">
                     <Box className="p-2 bg-orange-500/10 rounded-xl text-orange-500 flex items-center justify-center">
@@ -735,7 +776,7 @@ const Dashboard = () => {
 
             {/* Quick Start Card */}
             <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible">
-            <Card>
+            <Card id="tour-quick-start">
               <CardContent className="p-6 space-y-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
                   Quick Start Assessment
@@ -811,6 +852,9 @@ const Dashboard = () => {
 
       {/* Home Page Footer Note */}
       <FooterNote />
+
+      {/* Guided Help Tour */}
+      <HelpTour open={tourOpen} onClose={handleTourClose} />
     </Box>
   );
 };
