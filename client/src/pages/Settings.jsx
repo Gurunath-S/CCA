@@ -31,7 +31,9 @@ import {
 import { motion } from 'framer-motion';
 import { profileService } from '../services/profile.service';
 import { generatePDFReport } from '../utils/pdfGenerator';
+import { generateCSVReport } from '../utils/csvGenerator';
 import PrivacyPolicyDialog from '../components/PrivacyPolicyDialog';
+import { ExportDataDialog } from '../components/ExportDataDialog';
 
 const themes = [
   { name: 'Serenity', desc: 'Calm light blue, minimal', colors: ['#2563eb', '#3b82f6', '#f8fafc'] },
@@ -65,6 +67,7 @@ const Settings = () => {
   const [deleting, setDeleting] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Account details states
   const [tempName, setTempName] = useState(user?.name || '');
@@ -73,17 +76,23 @@ const Settings = () => {
   const [accountSuccessMsg, setAccountSuccessMsg] = useState('');
   const [saveAccountLoading, setSaveAccountLoading] = useState(false);
 
-  const handleExportData = async () => {
+  const handleExportData = async (format = 'pdf', contentSelection = 'all') => {
     setExporting(true);
     setSuccessMsg('');
     try {
       const data = await profileService.exportData(accessToken);
-      generatePDFReport(data);
-      setSuccessMsg('Your personal progress report PDF has been successfully compiled and downloaded!');
+      if (format === 'excel') {
+        generateCSVReport(data, contentSelection);
+        setSuccessMsg('Your progress data spreadsheet has been successfully compiled and downloaded!');
+      } else {
+        generatePDFReport(data, contentSelection);
+        setSuccessMsg('Your personal progress report PDF has been successfully compiled and downloaded!');
+      }
+      setExportDialogOpen(false);
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
-      setSuccessMsg('Failed to compile your PDF report. Please try again.');
+      setSuccessMsg('Failed to export your data. Please try again.');
       setTimeout(() => setSuccessMsg(''), 5000);
     } finally {
       setExporting(false);
@@ -504,25 +513,25 @@ const Settings = () => {
                   </Button>
                 </Paper>
 
-                {/* Export PDF Report Row */}
+                {/* Export Progress Data Row */}
                 <Paper className="p-5 border border-themeBorder bg-themePaper/50 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <Box className="space-y-1 max-w-xl">
                     <Typography variant="subtitle2" className="font-bold text-sm text-themeText">
-                      Export PDF Report
+                      Export Progress Data
                     </Typography>
                     <Typography variant="caption" className="text-themeTextSecondary block leading-relaxed">
-                      Download a beautifully formatted PDF report containing all your assessments and journal reflections.
+                      Download your progress report as a PDF document or export assessment and journal logs to a spreadsheet.
                     </Typography>
                   </Box>
                   <Button
                     variant="outlined"
-                    onClick={handleExportData}
+                    onClick={() => setExportDialogOpen(true)}
                     disabled={exporting}
                     startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
                     sx={{ minWidth: '160px' }}
                     className="rounded-xl border-orange-500/50 text-orange-500 hover:bg-orange-500/10 text-xs py-2 normal-case font-semibold"
                   >
-                    {exporting ? 'Generating...' : 'Export Report (PDF)'}
+                    {exporting ? 'Exporting...' : 'Export Data'}
                   </Button>
                 </Paper>
 
@@ -554,6 +563,14 @@ const Settings = () => {
 
       {/* Privacy Policy Dialog */}
       <PrivacyPolicyDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+
+      {/* Export Data Dialog */}
+      <ExportDataDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        onExport={handleExportData}
+        exporting={exporting}
+      />
 
       {/* Delete Account Confirmation Dialog */}
       <Dialog
