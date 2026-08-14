@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { ShieldOutlined as ShieldIcon } from '@mui/icons-material';
 import { useAuthStore } from '../store/useAuthStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const PolicyAcknowledgmentDialog = () => {
   const { user, acknowledgePolicy, logout } = useAuthStore();
@@ -22,9 +22,10 @@ const PolicyAcknowledgmentDialog = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // If no user or already acknowledged, don't render anything
-  if (!user || user.policyAcknowledged) {
+  // If no user, already acknowledged, or on the onboarding page, don't render anything
+  if (!user || user.policyAcknowledged || location.pathname === '/onboarding') {
     return null;
   }
 
