@@ -127,8 +127,10 @@ export const useAuthStore = create((set, get) => {
       set({ isLoading: true, error: null });
       try {
         const token = get().accessToken;
-        const currentStreakType = streakType || get().user?.profile?.streakType || 'Daily';
-        const data = await profileService.updateProfile({ ageGroup, theme, streakType: currentStreakType }, token);
+        const currentStreakType = streakType !== undefined ? streakType : (get().user?.profile?.streakType || 'Daily');
+        const currentAgeGroup = ageGroup !== undefined ? ageGroup : (get().user?.profile?.ageGroup || '');
+        const currentTheme = theme !== undefined ? theme : (get().user?.profile?.theme || 'Classic');
+        const data = await profileService.updateProfile({ ageGroup: currentAgeGroup, theme: currentTheme, streakType: currentStreakType }, token);
         const updatedProfile = data.profile;
         const currentUser = get().user;
         const updatedUser = {
