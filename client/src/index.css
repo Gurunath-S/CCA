@@ -253,3 +253,61 @@ body {
   display: none !important;
 }
 
+/* Quill Rich Editor Custom Styling & Dark Mode Compatibility */
+.quill {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-paper, #ffffff);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+}
+
+.quill .ql-toolbar.ql-snow {
+  border: none;
+  border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+  background-color: rgba(0, 0, 0, 0.02);
+  padding: 8px 12px;
+}
+
+.quill .ql-container.ql-snow {
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.quill .ql-editor {
+  min-height: 100px;
+  max-height: 300px;
+  color: var(--color-text-primary, #0f172a);
+}
+
+.quill .ql-editor.ql-blank::before {
+  color: #94a3b8; /* Slate 400 */
+  font-style: normal;
+  left: 15px;
+}
+
+/* Dark theme specific overrides for Quill toolbars and dropdowns */
+.theme-midnight-focus .quill .ql-toolbar.ql-snow {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-stroke {
+  stroke: #cbd5e1;
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-fill {
+  fill: #cbd5e1;
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-picker {
+  color: #cbd5e1;
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-picker-options {
+  background-color: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+

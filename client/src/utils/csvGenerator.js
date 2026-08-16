@@ -1,5 +1,19 @@
+const cleanExportText = (htmlString) => {
+  if (!htmlString) return '';
+  return htmlString
+    .replace(/<[^>]*>/g, '') // Strip HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+};
+
 /**
  * Compiles user data into a formatted CSV report that opens cleanly in Excel.
+
  * @param {Object} userData - The user data payload returned from the backend export API.
  * @param {string} contentSelection - What data to export ('all', 'assessments', 'notes').
  */
@@ -60,7 +74,7 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
           assess.attributeName,
           `${assess.alignmentScore} / 5`,
           assess.effortLevel || 'N/A',
-          assess.personalNote || ''
+          cleanExportText(assess.personalNote)
         ]);
       });
     } else {
@@ -78,7 +92,7 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
         csvRows.push([
           new Date(note.createdAt).toLocaleDateString(),
           note.attributeName,
-          note.content
+          cleanExportText(note.content)
         ]);
       });
     } else {

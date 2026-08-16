@@ -4,6 +4,20 @@ import { applyPlugin } from 'jspdf-autotable';
 // Register the autoTable plugin explicitly for Vite ESM support
 applyPlugin(jsPDF);
 
+const cleanExportText = (htmlString) => {
+  if (!htmlString) return '';
+  return htmlString
+    .replace(/<[^>]*>/g, '') // Strip HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+};
+
+
 /**
  * Compiles user data into a beautifully formatted PDF report.
  * @param {Object} userData - The user data payload returned from the backend export API.
@@ -183,7 +197,7 @@ export const generatePDFReport = (userData, contentSelection = 'all') => {
         assess.attributeName,
         `${assess.alignmentScore} / 5`,
         assess.effortLevel || 'N/A',
-        assess.personalNote || ''
+        cleanExportText(assess.personalNote)
       ])
     });
 
@@ -231,7 +245,7 @@ export const generatePDFReport = (userData, contentSelection = 'all') => {
       body: userData.journalNotes.map(note => [
         new Date(note.createdAt).toLocaleDateString(),
         note.attributeName,
-        note.content
+        cleanExportText(note.content)
       ])
     });
   }
