@@ -151,6 +151,16 @@ async function main() {
         daysAgo: 10
       },
       {
+        attrName: 'Cleanliness (Saucha - Niyama)',
+        alignmentScore: 5,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Maintained high standard of order and tidy desk. Noticed by team members.',
+        daysAgo: 1
+      },
+      {
         attrName: 'Courage',
         alignmentScore: 5,
         othersRecognize: 'Yes - Regularly',
@@ -159,6 +169,16 @@ async function main() {
         practiceFrequency: '1 - 5 times',
         personalNote: 'Spoke up in the meeting and presented my ideas clearly. Others appreciated my clarity.',
         daysAgo: 2
+      },
+      {
+        attrName: 'Courage',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Took the lead on resolving a client conflict. Felt good to step out of comfort zone.',
+        daysAgo: 8
       },
       {
         attrName: 'Truthfulness (Satya - Yama)',
@@ -171,6 +191,16 @@ async function main() {
         daysAgo: 5
       },
       {
+        attrName: 'Truthfulness (Satya - Yama)',
+        alignmentScore: 5,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Always truthful in communication, setting realistic project scope.',
+        daysAgo: 12
+      },
+      {
         attrName: 'Patience',
         alignmentScore: 2,
         othersRecognize: 'No - Not at all',
@@ -179,6 +209,26 @@ async function main() {
         practiceFrequency: 'Didn’t get to practice this',
         personalNote: 'Lost temper in traffic on Monday. Need to consciously breathe and stay calm.',
         daysAgo: 7
+      },
+      {
+        attrName: 'Patience',
+        alignmentScore: 3,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Waited calmly during a long team feedback call without interrupting.',
+        daysAgo: 3
+      },
+      {
+        attrName: 'Patience',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Successfully managed stress when server deployment failed. Kept composed.',
+        daysAgo: 14
       },
       {
         attrName: 'Sense of Discipline (Tapas - Niyama)',
@@ -191,6 +241,16 @@ async function main() {
         daysAgo: 3
       },
       {
+        attrName: 'Sense of Discipline (Tapas - Niyama)',
+        alignmentScore: 5,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Completed all target checklist items before 6 PM daily.',
+        daysAgo: 9
+      },
+      {
         attrName: 'Determination',
         alignmentScore: 5,
         othersRecognize: 'Yes - Regularly',
@@ -199,6 +259,56 @@ async function main() {
         practiceFrequency: 'More than 5 times',
         personalNote: 'Completed the task on time despite the complex issues.',
         daysAgo: 1
+      },
+      {
+        attrName: 'Determination',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Pushed through exhaustion to finish writing documentation.',
+        daysAgo: 6
+      },
+      {
+        attrName: 'Self Study (Svadhyaya - Niyama)',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I catch myself for not following this and make effort to correct',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Read 2 chapters of the philosophy book and journaled about my daily actions.',
+        daysAgo: 2
+      },
+      {
+        attrName: 'Self Study (Svadhyaya - Niyama)',
+        alignmentScore: 3,
+        othersRecognize: 'Yes - Sometimes',
+        consciousEffort: true,
+        effortLevel: 'I am aware of this trait in my action but hard to practice',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Did a weekly review of my goals and behavior triggers.',
+        daysAgo: 11
+      },
+      {
+        attrName: 'Self Confidence',
+        alignmentScore: 4,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: 'More than 5 times',
+        personalNote: 'Felt confident answering tricky client questions on the staging environment.',
+        daysAgo: 4
+      },
+      {
+        attrName: 'Unselfishness',
+        alignmentScore: 5,
+        othersRecognize: 'Yes - Regularly',
+        consciousEffort: true,
+        effortLevel: 'I am able to practice this without lot of effort',
+        practiceFrequency: '1 - 5 times',
+        personalNote: 'Shared my learning resources and code snippets with the new junior engineer.',
+        daysAgo: 5
       }
     ];
 
