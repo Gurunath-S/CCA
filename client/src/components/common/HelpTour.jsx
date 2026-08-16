@@ -193,7 +193,7 @@ export const HelpTour = ({ open, onClose }) => {
               sx={{
                 p: 3,
                 borderRadius: '24px',
-                bgcolor: 'var(--color-bg-paper, #ffffff)',
+                bgcolor: 'background.paper',
                 color: 'var(--color-text, #0f172a)',
                 backgroundImage: 'none',
                 border: '1px solid var(--color-border, rgba(0, 0, 0, 0.08))',
@@ -264,6 +264,22 @@ export const HelpTour = ({ open, onClose }) => {
                       }}
                     >
                       Back
+                    </Button>
+                  )}
+
+                  {currentStep < steps.length - 1 && (
+                    <Button
+                      size="small"
+                      onClick={onClose}
+                      sx={{
+                        textTransform: 'none',
+                        borderRadius: '10px',
+                        color: 'text.secondary',
+                        fontWeight: 600,
+                        '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.04)', color: '#f97316' }
+                      }}
+                    >
+                      Skip
                     </Button>
                   )}
 
