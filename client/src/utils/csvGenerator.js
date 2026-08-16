@@ -10,10 +10,12 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
   const escapeCSV = (val) => {
     if (val === null || val === undefined) return '';
     let stringVal = String(val);
+    // Replace newlines with spaces to prevent breaking row alignment in Excel
+    stringVal = stringVal.replace(/\r?\n|\r/g, ' ');
     // Replace double quotes with two double quotes
     stringVal = stringVal.replace(/"/g, '""');
-    // If the value contains commas, newlines, or quotes, wrap it in double quotes
-    if (stringVal.includes(',') || stringVal.includes('\n') || stringVal.includes('\r') || stringVal.includes('"')) {
+    // Wrap in quotes if it contains commas or quotes
+    if (stringVal.includes(',') || stringVal.includes('"')) {
       return `"${stringVal}"`;
     }
     return stringVal;
@@ -21,7 +23,7 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
 
   // 1. Profile Summary (Include basic headers if "all" is selected)
   if (contentSelection === 'all') {
-    csvRows.push(['ACCOUNT PROFILE SUMMARY']);
+    csvRows.push(['SECTION: ACCOUNT PROFILE SUMMARY']);
     csvRows.push(['Field', 'Value']);
     csvRows.push(['Name', userData.account?.name || 'N/A']);
     csvRows.push(['Email', userData.account?.email || 'N/A']);
@@ -29,12 +31,13 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
     csvRows.push(['Age Group', userData.profile?.ageGroup || 'N/A']);
     csvRows.push(['Joined On', userData.account?.createdAt ? new Date(userData.account.createdAt).toLocaleDateString() : 'N/A']);
     csvRows.push(['Report Generated At', new Date(userData.exportedAt || new Date()).toLocaleString()]);
+    csvRows.push(['Date Range Filter', userData.dateRangeLabel || 'All Time']);
     csvRows.push([]); // empty line separator
   }
 
   // 2. Custom Attributes (Only relevant if exporting all or assessments)
   if ((contentSelection === 'all' || contentSelection === 'assessments') && userData.customAttributes && userData.customAttributes.length > 0) {
-    csvRows.push(['CUSTOM ATTRIBUTES CREATED']);
+    csvRows.push(['SECTION: CUSTOM ATTRIBUTES CREATED']);
     csvRows.push(['Attribute Name', 'Category', 'Description']);
     userData.customAttributes.forEach(attr => {
       csvRows.push([
@@ -48,7 +51,7 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
 
   // 3. Assessments
   if (contentSelection === 'all' || contentSelection === 'assessments') {
-    csvRows.push(['SELF-ASSESSMENT HISTORY']);
+    csvRows.push(['SECTION: SELF-ASSESSMENT HISTORY']);
     if (userData.assessments && userData.assessments.length > 0) {
       csvRows.push(['Date', 'Attribute Name', 'Score', 'Effort Level', 'Notes / Reflection']);
       userData.assessments.forEach(assess => {
@@ -68,7 +71,7 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
 
   // 4. Journal Notes
   if (contentSelection === 'all' || contentSelection === 'notes') {
-    csvRows.push(['REFLECTIVE JOURNAL NOTES']);
+    csvRows.push(['SECTION: REFLECTIVE JOURNAL NOTES']);
     if (userData.journalNotes && userData.journalNotes.length > 0) {
       csvRows.push(['Date', 'Attribute Name', 'Journal Entry Content']);
       userData.journalNotes.forEach(note => {
@@ -83,9 +86,19 @@ export const generateCSVReport = (userData, contentSelection = 'all') => {
     }
   }
 
-  // Convert to CSV string
+  // Determine the maximum number of columns across all rows to pad them evenly
+  const maxColumns = Math.max(...csvRows.map(row => row.length), 1);
+
+  // Convert to CSV string with padded rows so they align beautifully
   const csvContent = csvRows
-    .map(row => row.map(cell => escapeCSV(cell)).join(','))
+    .map(row => {
+      // Pad the row elements to match the maximum column count
+      const paddedRow = [...row];
+      while (paddedRow.length < maxColumns) {
+        paddedRow.push('');
+      }
+      return paddedRow.map(cell => escapeCSV(cell)).join(',');
+    })
     .join('\n');
 
   // Trigger download with UTF-8 BOM so Excel opens it with correct encoding

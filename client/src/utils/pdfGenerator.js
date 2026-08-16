@@ -88,7 +88,8 @@ export const generatePDFReport = (userData, contentSelection = 'all') => {
       ['Streak Calculation Mode', `${userData.profile?.streakType || 'Daily'} Streak`],
       ['Age Group', userData.profile?.ageGroup || 'N/A'],
       ['Joined On', userData.account.createdAt ? new Date(userData.account.createdAt).toLocaleDateString() : 'N/A'],
-      ['Report Generated At', new Date(userData.exportedAt || new Date()).toLocaleString()]
+      ['Report Generated At', new Date(userData.exportedAt || new Date()).toLocaleString()],
+      ['Date Range Filter', userData.dateRangeLabel || 'All Time']
     ]
   });
 
