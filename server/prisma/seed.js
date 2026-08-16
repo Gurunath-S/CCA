@@ -241,7 +241,74 @@ async function main() {
     }
   }
 
-  console.log('Database seeded successfully!');
+  // Seed multiple mock users with location data for analytics testing
+  console.log('Seeding mock users with geographic data...');
+  const mockUsers = [
+    { email: 'sarah.jones@example.com', name: 'Sarah Jones', country: 'us', city: 'New York' },
+    { email: 'raj.patel@example.com', name: 'Raj Patel', country: 'in', city: 'Mumbai' },
+    { email: 'amit.sharma@example.com', name: 'Amit Sharma', country: 'in', city: 'Delhi' },
+    { email: 'john.smith@example.com', name: 'John Smith', country: 'us', city: 'San Francisco' },
+    { email: 'david.miller@example.com', name: 'David Miller', country: 'gb', city: 'London' },
+    { email: 'emma.watson@example.com', name: 'Emma Watson', country: 'gb', city: 'Edinburgh' },
+    { email: 'yuki.tanaka@example.com', name: 'Yuki Tanaka', country: 'jp', city: 'Tokyo' },
+    { email: 'sophie.dubois@example.com', name: 'Sophie Dubois', country: 'fr', city: 'Paris' },
+    { email: 'hans.schmidt@example.com', name: 'Hans Schmidt', country: 'de', city: 'Berlin' },
+    { email: 'alex.gomez@example.com', name: 'Alex Gomez', country: 'mx', city: 'Mexico City' },
+    { email: 'li.wei@example.com', name: 'Li Wei', country: 'cn', city: 'Beijing' },
+    { email: 'lucas.silva@example.com', name: 'Lucas Silva', country: 'br', city: 'Sao Paulo' }
+  ];
+
+  for (const mock of mockUsers) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: mock.email }
+    });
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          email: mock.email,
+          name: mock.name,
+          role: 'USER',
+          profile: {
+            create: {
+              theme: 'Serenity',
+              ageGroup: '20–25',
+              country: mock.country,
+              city: mock.city
+            }
+          }
+        }
+      });
+    } else {
+      await prisma.userProfile.upsert({
+        where: { userId: existingUser.id },
+        update: {
+          country: mock.country,
+          city: mock.city
+        },
+        create: {
+          userId: existingUser.id,
+          country: mock.country,
+          city: mock.city,
+          theme: 'Serenity',
+          ageGroup: '20–25'
+        }
+      });
+    }
+  }
+
+  // Standardize existing user country names to ISO codes
+  const profiles = await prisma.userProfile.findMany();
+  for (const prof of profiles) {
+    if (prof.country && prof.country.toLowerCase() === 'india') {
+      await prisma.userProfile.update({
+        where: { id: prof.id },
+        data: { country: 'in' }
+      });
+    }
+  }
+
+  console.log('Database seeded successfully with locations!');
 }
 
 main()

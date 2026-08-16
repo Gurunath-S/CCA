@@ -11,7 +11,7 @@ model User {
   id                 String               @id @default(uuid())
   email              String               @unique
   name               String?
-  picture            String?
+  picture            String?              @db.LongText
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   profile            UserProfile?
@@ -30,6 +30,8 @@ model UserProfile {
   ageGroup   String?  // Options: "15–20", "20–25", "25–30", "30–40", "40–50", "50–60", "Above 60"
   theme      String   @default("Classic") // Options: "Serenity", "Midnight Focus", "Nature", "Classic", "Vivekananda"
   streakType String   @default("Daily")   // Options: "Daily", "Weekly"
+  country    String?
+  city       String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
