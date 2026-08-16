@@ -22,7 +22,7 @@ const AppInfoDialog = ({ open, onClose }) => {
       PaperProps={{
         sx: {
           borderRadius: '24px',
-          bgcolor: 'var(--color-bg-paper, #ffffff)',
+          bgcolor: 'background.paper',
           color: 'var(--color-text, #0f172a)',
           backgroundImage: 'none',
           border: '1px solid var(--color-border, rgba(0, 0, 0, 0.08))',
