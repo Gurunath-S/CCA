@@ -32,6 +32,33 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 function App() {
   const { user } = useAuthStore();
+
+  // Geolocation detection for user country & city
+  React.useEffect(() => {
+    if (user && user.profile && (!user.profile.country || !user.profile.city)) {
+      const detectLocation = async () => {
+        try {
+          const res = await fetch('https://ipapi.co/json/');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.country_name || data.city) {
+              const { updateProfile } = useAuthStore.getState();
+              await updateProfile(
+                undefined,
+                undefined,
+                undefined,
+                data.country ? data.country.toLowerCase() : 'unknown',
+                data.city || 'Unknown'
+              );
+            }
+          }
+        } catch (err) {
+          console.warn('Geolocation detection failed:', err);
+        }
+      };
+      detectLocation();
+    }
+  }, [user]);
   
   // Select and generate MUI theme dynamically
   const activeTheme = user?.profile?.theme || 'Classic';
