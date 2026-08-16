@@ -230,3 +230,26 @@ body {
   }
 }
 
+/* Fix react-svg-worldmap visibility and contrast */
+.location-map-container svg g path {
+  fill: #cbd5e1;
+  stroke: #000000 !important;
+  stroke-width: 1px !important;
+  transition: fill 0.2s ease;
+}
+.dark .location-map-container svg g path {
+  fill: #334155;
+  stroke: #000000 !important;
+  stroke-width: 1.2px !important;
+}
+.location-map-container svg g path:hover {
+  opacity: 0.8;
+}
+
+/* Hide custom react-svg-worldmap tooltip overlay elements (rect, polygon, text) */
+.location-map-container svg rect,
+.location-map-container svg polygon,
+.location-map-container svg text {
+  display: none !important;
+}
+
