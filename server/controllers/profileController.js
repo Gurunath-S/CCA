@@ -19,21 +19,25 @@ exports.getProfile = async (req, res) => {
 };
 
 exports.updateProfile = async (req, res) => {
-  const { ageGroup, theme, streakType } = req.body;
+  const { ageGroup, theme, streakType, country, city } = req.body;
 
   try {
     const profile = await prisma.userProfile.upsert({
       where: { userId: req.user.id },
       update: {
-        ageGroup,
-        theme,
-        streakType
+        ageGroup: ageGroup !== undefined ? ageGroup : undefined,
+        theme: theme !== undefined ? theme : undefined,
+        streakType: streakType !== undefined ? streakType : undefined,
+        country: country !== undefined ? country : undefined,
+        city: city !== undefined ? city : undefined
       },
       create: {
         userId: req.user.id,
-        ageGroup,
-        theme,
-        streakType
+        ageGroup: ageGroup || null,
+        theme: theme || 'Classic',
+        streakType: streakType || 'Daily',
+        country: country || null,
+        city: city || null
       }
     });
 

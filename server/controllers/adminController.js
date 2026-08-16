@@ -34,7 +34,9 @@ exports.getUsers = async (req, res) => {
         profile: {
           select: {
             ageGroup: true,
-            theme: true
+            theme: true,
+            country: true,
+            city: true
           }
         },
         _count: {
@@ -72,7 +74,9 @@ exports.getUserDetail = async (req, res) => {
         profile: {
           select: {
             ageGroup: true,
-            theme: true
+            theme: true,
+            country: true,
+            city: true
           }
         }
       }
