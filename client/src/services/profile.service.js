@@ -1,9 +1,9 @@
 import { api } from '../api/client';
 
 export const profileService = {
-  updateProfile: async ({ ageGroup, theme, streakType }, token) => {
+  updateProfile: async ({ ageGroup, theme, streakType, country, city }, token) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const response = await api.put('/profile', { ageGroup, theme, streakType }, { headers });
+    const response = await api.put('/profile', { ageGroup, theme, streakType, country, city }, { headers });
     return response.data;
   },
 

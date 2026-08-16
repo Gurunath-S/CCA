@@ -123,14 +123,24 @@ export const useAuthStore = create((set, get) => {
       }
     },
 
-    updateProfile: async (ageGroup, theme, streakType) => {
+    updateProfile: async (ageGroup, theme, streakType, country, city) => {
       set({ isLoading: true, error: null });
       try {
         const token = get().accessToken;
         const currentStreakType = streakType !== undefined ? streakType : (get().user?.profile?.streakType || 'Daily');
         const currentAgeGroup = ageGroup !== undefined ? ageGroup : (get().user?.profile?.ageGroup || '');
         const currentTheme = theme !== undefined ? theme : (get().user?.profile?.theme || 'Classic');
-        const data = await profileService.updateProfile({ ageGroup: currentAgeGroup, theme: currentTheme, streakType: currentStreakType }, token);
+        const currentCountry = country !== undefined ? country : (get().user?.profile?.country || null);
+        const currentCity = city !== undefined ? city : (get().user?.profile?.city || null);
+        
+        const data = await profileService.updateProfile({ 
+          ageGroup: currentAgeGroup, 
+          theme: currentTheme, 
+          streakType: currentStreakType,
+          country: currentCountry,
+          city: currentCity
+        }, token);
+        
         const updatedProfile = data.profile;
         const currentUser = get().user;
         const updatedUser = {
@@ -139,7 +149,7 @@ export const useAuthStore = create((set, get) => {
         };
 
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        syncTailwindDarkMode(theme);
+        syncTailwindDarkMode(currentTheme);
 
         set({
           user: updatedUser,
