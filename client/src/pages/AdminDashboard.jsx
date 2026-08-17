@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../store/useAuthStore';
+import { api, useAuthStore } from '../store/useAuthStore';
+import WorldMap from 'react-svg-worldmap';
+import { themePalettes } from '../theme/themeConfig';
 import {
   Box,
   Typography,
@@ -17,7 +19,8 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Alert
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -41,6 +44,11 @@ import {
 
 const AdminDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
+  const { user } = useAuthStore();
+  const activeTheme = user?.profile?.theme || 'Classic';
+  const themePalette = themePalettes[activeTheme] || themePalettes.Classic;
+  const primaryColor = themePalette.primary.main;
+
   const [users, setUsers] = useState([]);
   const [globalAttributes, setGlobalAttributes] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -54,8 +62,9 @@ const AdminDashboard = () => {
   const [newAttrCategory, setNewAttrCategory] = useState('General');
   const [newAttrDesc, setNewAttrDesc] = useState('');
   const [isSavingAttribute, setIsSavingAttribute] = useState(false);
-  const [attrError, setAttrError] = useState('');
-  const [attrSuccess, setAttrSuccess] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastSeverity, setToastSeverity] = useState('success');
+  const [countryPage, setCountryPage] = useState(1);
 
   // Global Attributes filters
   const [attrSearch, setAttrSearch] = useState('');
@@ -104,11 +113,11 @@ const AdminDashboard = () => {
   // Handle adding new global attribute
   const handleCreateGlobalAttribute = async (e) => {
     e.preventDefault();
-    setAttrError('');
-    setAttrSuccess('');
+    setToastMsg('');
     
     if (!newAttrName.trim()) {
-      setAttrError('Attribute name is required');
+      setToastMsg('Attribute name is required');
+      setToastSeverity('error');
       return;
     }
 
@@ -120,14 +129,16 @@ const AdminDashboard = () => {
         description: newAttrDesc.trim()
       });
 
-      setAttrSuccess(response.data.message || 'Global attribute created successfully!');
+      setToastMsg(response.data.message || 'Global attribute created successfully!');
+      setToastSeverity('success');
       setNewAttrName('');
       setNewAttrDesc('');
       fetchGlobalAttributes();
       fetchUsers(); // Refresh counts if needed
     } catch (err) {
       console.error(err);
-      setAttrError(err.response?.data?.message || 'Failed to create global attribute');
+      setToastMsg(err.response?.data?.message || 'Failed to create global attribute');
+      setToastSeverity('error');
     } finally {
       setIsSavingAttribute(false);
     }
@@ -173,6 +184,75 @@ const AdminDashboard = () => {
       name,
       count: groups[name]
     }));
+  };
+
+  // Country code mapping dictionary
+  const countryNameMap = {
+    in: 'India',
+    us: 'United States',
+    ca: 'Canada',
+    gb: 'United Kingdom',
+    au: 'Australia',
+    de: 'Germany',
+    fr: 'France',
+    jp: 'Japan',
+    cn: 'China',
+    br: 'Brazil',
+    za: 'South Africa',
+    ru: 'Russia',
+    mx: 'Mexico',
+    it: 'Italy',
+    es: 'Spain',
+    sg: 'Singapore',
+    ae: 'United Arab Emirates',
+    sa: 'Saudi Arabia',
+    my: 'Malaysia',
+    id: 'Indonesia',
+    nl: 'Netherlands',
+    ch: 'Switzerland',
+    se: 'Sweden',
+    no: 'Norway',
+    nz: 'New Zealand'
+  };
+
+  const getCountryName = (code) => {
+    if (!code || code === 'unknown') return 'Unknown Location';
+    return countryNameMap[code.toLowerCase()] || code.toUpperCase();
+  };
+
+  // Generate country distribution for map
+  const getCountryDistributionForMap = () => {
+    const counts = {};
+    users.forEach(u => {
+      let country = u.profile?.country || 'unknown';
+      country = country.trim().toLowerCase();
+      if (country && country !== 'unknown') {
+        counts[country] = (counts[country] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(counts).map(([country, value]) => ({
+      country,
+      value
+    }));
+  };
+
+  // Generate country distribution for list
+  const getCountryDistribution = () => {
+    const counts = {};
+    users.forEach(u => {
+      let country = u.profile?.country || 'unknown';
+      country = country.trim().toLowerCase();
+      counts[country] = (counts[country] || 0) + 1;
+    });
+    
+    return Object.entries(counts)
+      .map(([code, count]) => ({
+        code,
+        name: getCountryName(code),
+        count
+      }))
+      .sort((a, b) => b.count - a.count);
   };
 
   // Filter global attributes list
@@ -356,6 +436,112 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Location Statistics (World Map & Countries List) */}
+          <Grid item xs={12}>
+            <Card className="shadow-md bg-white/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-semibold mb-6 text-slate-700 dark:text-slate-350">
+                  Global User Distribution
+                </Typography>
+                
+                {isLoadingUsers ? (
+                  <Box className="flex justify-center items-center h-[350px]">
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : users.length === 0 ? (
+                  <Box className="flex justify-center items-center h-[350px] text-slate-400 text-sm">
+                    No location data available.
+                  </Box>
+                ) : (
+                  <Grid container spacing={4} alignItems="flex-start">
+                    {/* World Map Visualization */}
+                    <Grid item xs={12} md={7} className="flex justify-center items-start">
+                      <Box className="w-full max-w-[550px] overflow-hidden flex justify-center bg-slate-50 dark:bg-slate-950/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 location-map-container">
+                        <WorldMap
+                          color={primaryColor}
+                          backgroundColor="transparent"
+                          borderColor="#cbd5e1"
+                          title=""
+                          valueSuffix=" users"
+                          size={480}
+                          data={getCountryDistributionForMap()}
+                        />
+                      </Box>
+                    </Grid>
+
+                    {/* Country List Breakdown */}
+                    <Grid item xs={12} md={5}>
+                      <Typography variant="subtitle2" className="font-semibold text-slate-500 dark:text-slate-400 mb-3">
+                        Country breakdown
+                      </Typography>
+                      <Box className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
+                        {(() => {
+                          const countryList = getCountryDistribution();
+                          const countriesPerPage = 5;
+                          const totalPages = Math.ceil(countryList.length / countriesPerPage);
+                          
+                          // Safeguard page bounds in case data size changes dynamically
+                          const activePage = Math.min(countryPage, Math.max(1, totalPages));
+                          const paginated = countryList.slice((activePage - 1) * countriesPerPage, activePage * countriesPerPage);
+
+                          return (
+                            <>
+                              {paginated.map((item, index) => {
+                                const percentage = Math.round((item.count / users.length) * 100);
+                                return (
+                                  <Box key={index} className="space-y-1">
+                                    <Box className="flex justify-between text-xs font-semibold text-slate-650 dark:text-slate-300">
+                                      <span>{item.name} ({item.code.toUpperCase()})</span>
+                                      <span>{item.count} {item.count === 1 ? 'user' : 'users'} ({percentage}%)</span>
+                                    </Box>
+                                    <Box className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                                      <Box 
+                                        className="h-full rounded-full transition-all duration-500" 
+                                        style={{ width: `${percentage}%`, backgroundColor: primaryColor }} 
+                                      />
+                                    </Box>
+                                  </Box>
+                                );
+                              })}
+
+                              {totalPages > 1 && (
+                                <Box className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                  <Typography variant="caption" className="text-slate-400 font-medium">
+                                    Page {activePage} of {totalPages}
+                                  </Typography>
+                                  <Box className="flex space-x-2">
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      disabled={activePage === 1}
+                                      onClick={() => setCountryPage(p => Math.max(1, p - 1))}
+                                      className="text-xs min-w-0 px-2.5 py-0.5 rounded-lg border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    >
+                                      Prev
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      disabled={activePage === totalPages}
+                                      onClick={() => setCountryPage(p => Math.min(totalPages, p + 1))}
+                                      className="text-xs min-w-0 px-2.5 py-0.5 rounded-lg border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    >
+                                      Next
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </Box>
+                    </Grid>
+                  </Grid>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
       )}
 
@@ -374,17 +560,6 @@ const AdminDashboard = () => {
                     These virtues instantly populate in the dashboard listings of all users.
                   </Typography>
                 </Box>
-
-                {attrError && (
-                  <Alert severity="error" className="rounded-xl">
-                    {attrError}
-                  </Alert>
-                )}
-                {attrSuccess && (
-                  <Alert severity="success" className="rounded-xl">
-                    {attrSuccess}
-                  </Alert>
-                )}
 
                 <form onSubmit={handleCreateGlobalAttribute} className="space-y-4">
                   <TextField
@@ -526,6 +701,32 @@ const AdminDashboard = () => {
       )}
 
 
+      {/* Floating success/error feedback message */}
+      <Snackbar
+        open={Boolean(toastMsg)}
+        autoHideDuration={4000}
+        onClose={() => setToastMsg('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setToastMsg('')} 
+          severity={toastSeverity} 
+          variant="filled"
+          sx={{ 
+            width: '100%', 
+            borderRadius: '16px', 
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            bgcolor: toastSeverity === 'error' ? 'error.main' : 'success.main',
+            color: '#ffffff',
+            fontWeight: 600,
+            '& .MuiAlert-icon': {
+              color: '#ffffff'
+            }
+          }}
+        >
+          {toastMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
