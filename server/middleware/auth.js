@@ -14,7 +14,10 @@ module.exports = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    console.error('Auth middleware error:', err.message);
+    // TokenExpiredError is a normal lifecycle event handled silently by client-side refresh
+    if (err.name !== 'TokenExpiredError') {
+      console.error('Auth middleware error:', err.message);
+    }
     return res.status(401).json({ message: 'Authentication failed. Invalid or expired token.' });
   }
 };
