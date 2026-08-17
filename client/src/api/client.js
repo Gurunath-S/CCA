@@ -4,9 +4,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
  * Centralized Axios client instance configured with base URL & JSON headers
+ * and withCredentials enabled so cookies are automatically sent.
  */
 export const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -30,7 +32,9 @@ const processQueue = (error, token = null) => {
 };
 
 /**
- * Request Interceptor: Attaches Bearer Access Token to outgoing requests
+ * Request Interceptor: No longer injects Authorization header from localStorage,
+ * as HTTP-only cookies are automatically attached by the browser.
+ * Fallback to localStorage is kept only if a token is present (for backward compatibility).
  */
 api.interceptors.request.use(
   (config) => {
@@ -44,7 +48,7 @@ api.interceptors.request.use(
 );
 
 /**
- * Response Interceptor: Handles automatic token refresh on 401 responses
+ * Response Interceptor: Handles automatic token refresh on 401 responses using cookies
  */
 api.interceptors.response.use(
   (response) => response,
@@ -66,18 +70,16 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        isRefreshing = false;
-        return Promise.reject(error);
-      }
-
       try {
-        const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        // Send refresh token request (cookies are automatically attached)
+        const response = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
+        const { accessToken } = response.data;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        // If client fallback is active, save new token
+        if (localStorage.getItem('accessToken')) {
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', response.data.refreshToken);
+        }
 
         api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;

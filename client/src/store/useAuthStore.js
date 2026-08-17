@@ -7,9 +7,6 @@ import { api } from '../api/client';
 export { api };
 
 export const useAuthStore = create((set, get) => {
-  // Initialize state from localStorage
-  const savedToken = localStorage.getItem('accessToken');
-  const savedRefreshToken = localStorage.getItem('refreshToken');
   let savedUser = null;
   
   try {
@@ -23,10 +20,10 @@ export const useAuthStore = create((set, get) => {
   syncTailwindDarkMode(initialTheme);
 
   return {
-    accessToken: savedToken || null,
-    refreshToken: savedRefreshToken || null,
+    accessToken: null,
+    refreshToken: null,
     user: savedUser || null,
-    isAuthenticated: !!savedToken,
+    isAuthenticated: !!savedUser,
     isLoading: false,
     error: null,
 
@@ -35,17 +32,13 @@ export const useAuthStore = create((set, get) => {
       set({ isLoading: true, error: null });
       try {
         const data = await authService.loginWithGoogle({ credential, isMock, email, name, picture });
-        const { accessToken, refreshToken, user, isNewUser } = data;
+        const { user, isNewUser } = data;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
 
         syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
         set({
-          accessToken,
-          refreshToken,
           user,
           isAuthenticated: true,
           isLoading: false
@@ -63,8 +56,12 @@ export const useAuthStore = create((set, get) => {
     setRedirectSession: async (accessToken, refreshToken) => {
       set({ isLoading: true, error: null });
       try {
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        if (accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+        }
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
 
         const data = await authService.getCurrentUser(accessToken);
         const { user } = data;
@@ -73,8 +70,6 @@ export const useAuthStore = create((set, get) => {
         syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
         set({
-          accessToken,
-          refreshToken,
           user,
           isAuthenticated: true,
           isLoading: false
@@ -87,8 +82,6 @@ export const useAuthStore = create((set, get) => {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         set({
-          accessToken: null,
-          refreshToken: null,
           user: null,
           isAuthenticated: false,
           isLoading: false,
@@ -113,8 +106,6 @@ export const useAuthStore = create((set, get) => {
         document.documentElement.classList.remove('dark');
 
         set({
-          accessToken: null,
-          refreshToken: null,
           user: null,
           isAuthenticated: false,
           isLoading: false,
@@ -241,8 +232,6 @@ export const useAuthStore = create((set, get) => {
         document.documentElement.classList.remove('dark');
 
         set({
-          accessToken: null,
-          refreshToken: null,
           user: null,
           isAuthenticated: false,
           isLoading: false,
@@ -258,18 +247,17 @@ export const useAuthStore = create((set, get) => {
 
     refreshSession: async () => {
       const currentRefreshToken = get().refreshToken;
-      if (!currentRefreshToken) return false;
 
       try {
         const data = await authService.refreshToken(currentRefreshToken);
         const { accessToken, refreshToken } = data;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        if (localStorage.getItem('accessToken')) {
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+        }
 
         set({
-          accessToken,
-          refreshToken,
           isAuthenticated: true
         });
 
@@ -277,6 +265,24 @@ export const useAuthStore = create((set, get) => {
       } catch (err) {
         console.error('Session refresh failed:', err);
         get().logout();
+        return false;
+      }
+    },
+
+    checkAuth: async () => {
+      set({ isLoading: true });
+      try {
+        const response = await api.get('/auth/me');
+        const { user } = response.data;
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user, isAuthenticated: true, isLoading: false });
+        return true;
+      } catch (err) {
+        console.error('Auth verification failed:', err);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        set({ user: null, isAuthenticated: false, isLoading: false });
         return false;
       }
     }

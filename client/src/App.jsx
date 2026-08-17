@@ -31,7 +31,12 @@ const Settings = lazy(() => import('./pages/Settings'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 function App() {
-  const { user } = useAuthStore();
+  const { user, checkAuth } = useAuthStore();
+
+  // Validate session on mount
+  React.useEffect(() => {
+    checkAuth();
+  }, []);
 
   // Geolocation detection for user country & city
   React.useEffect(() => {

@@ -34,11 +34,9 @@ const Login = () => {
 
     if (redirectError) {
       setLoginError(decodeURIComponent(redirectError));
-      // Clean query parameters from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (accessToken && refreshToken) {
-      // Clean query parameters immediately for security
-      window.history.replaceState({}, document.title, window.location.pathname);
+      navigate('/login', { replace: true });
+    } else if (accessToken || isNewUser !== null) {
+      navigate('/login', { replace: true });
 
       const processRedirectLogin = async () => {
         try {
