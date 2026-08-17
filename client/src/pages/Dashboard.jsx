@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { themePalettes } from '../theme/themeConfig';
+import { aggregateChartData } from '../utils/chartHelpers';
+
 import {
   Box,
   Typography,
@@ -391,13 +393,7 @@ const Dashboard = () => {
 
   const filteredDashHistory = getFilteredDashHistory();
 
-  const chartData = [...filteredDashHistory]
-    .reverse()
-    .map(item => ({
-      date: dayjs(item.assessmentDate).format('MMM DD'),
-      score: item.alignmentScore,
-      character: item.character.name.split(' (')[0]
-    }));
+  const chartData = aggregateChartData(filteredDashHistory);
 
   const handleQuickStart = () => {
     if (quickStartId) {
