@@ -17,7 +17,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  TextField
+  TextField,
+  Snackbar
 } from '@mui/material';
 import {
   Palette as PaletteIcon,
@@ -62,6 +63,7 @@ const Settings = () => {
   const activeTheme = user?.profile?.theme || 'Classic';
   const selectedStreak = user?.profile?.streakType || '';
   const [successMsg, setSuccessMsg] = useState('');
+  const [successMsgSeverity, setSuccessMsgSeverity] = useState('success');
   const [isLoading, setIsLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -73,26 +75,80 @@ const Settings = () => {
   const [tempName, setTempName] = useState(user?.name || '');
   const [tempEmail, setTempEmail] = useState(user?.email || '');
   const [tempPicture, setTempPicture] = useState(user?.picture || '');
-  const [accountSuccessMsg, setAccountSuccessMsg] = useState('');
   const [saveAccountLoading, setSaveAccountLoading] = useState(false);
 
-  const handleExportData = async (format = 'pdf', contentSelection = 'all') => {
+  const handleExportData = async (format = 'pdf', contentSelection = 'all', dateFilter = { type: 'all' }) => {
     setExporting(true);
     setSuccessMsg('');
     try {
       const data = await profileService.exportData(accessToken);
-      if (format === 'excel') {
-        generateCSVReport(data, contentSelection);
-        setSuccessMsg('Your progress data spreadsheet has been successfully compiled and downloaded!');
+      
+      // Clone the exported data payload to avoid mutations
+      const filteredData = { ...data };
+
+      if (dateFilter && dateFilter.type !== 'all') {
+        let start = null;
+        let end = null;
+
+        if (dateFilter.type === '7days') {
+          start = new Date();
+          start.setDate(start.getDate() - 7);
+          start.setHours(0, 0, 0, 0);
+        } else if (dateFilter.type === '30days') {
+          start = new Date();
+          start.setDate(start.getDate() - 30);
+          start.setHours(0, 0, 0, 0);
+        } else if (dateFilter.type === 'custom') {
+          if (dateFilter.startDate) {
+            start = new Date(dateFilter.startDate);
+            start.setHours(0, 0, 0, 0);
+          }
+          if (dateFilter.endDate) {
+            end = new Date(dateFilter.endDate);
+            end.setHours(23, 59, 59, 999);
+          }
+        }
+
+        if (filteredData.assessments) {
+          filteredData.assessments = filteredData.assessments.filter(assess => {
+            const date = new Date(assess.assessmentDate);
+            if (start && date < start) return false;
+            if (end && date > end) return false;
+            return true;
+          });
+        }
+
+        if (filteredData.journalNotes) {
+          filteredData.journalNotes = filteredData.journalNotes.filter(note => {
+            const date = new Date(note.createdAt);
+            if (start && date < start) return false;
+            if (end && date > end) return false;
+            return true;
+          });
+        }
+
+        filteredData.dateRangeLabel = dateFilter.type === '7days' ? 'Last 7 Days'
+          : dateFilter.type === '30days' ? 'Last 30 Days'
+          : `Custom Range (${new Date(dateFilter.startDate).toLocaleDateString()} - ${new Date(dateFilter.endDate).toLocaleDateString()})`;
       } else {
-        generatePDFReport(data, contentSelection);
+        filteredData.dateRangeLabel = 'All Time';
+      }
+
+      if (format === 'excel') {
+        generateCSVReport(filteredData, contentSelection);
+        setSuccessMsg('Your progress data spreadsheet has been successfully compiled and downloaded!');
+        setSuccessMsgSeverity('success');
+      } else {
+        generatePDFReport(filteredData, contentSelection);
         setSuccessMsg('Your personal progress report PDF has been successfully compiled and downloaded!');
+        setSuccessMsgSeverity('success');
       }
       setExportDialogOpen(false);
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
       setSuccessMsg('Failed to export your data. Please try again.');
+      setSuccessMsgSeverity('error');
       setTimeout(() => setSuccessMsg(''), 5000);
     } finally {
       setExporting(false);
@@ -106,6 +162,7 @@ const Settings = () => {
     } catch (err) {
       console.error(err);
       setSuccessMsg('Failed to delete account. Please try again.');
+      setSuccessMsgSeverity('error');
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);
@@ -115,14 +172,16 @@ const Settings = () => {
   const handleAgeChange = async (age) => {
     setIsLoading(true);
     setSuccessMsg('');
-    const newAge = selectedAge === age ? '' : age;
+    const newAge = selectedAge === age ? 'Not Specified' : age;
     try {
       await updateProfile(newAge, activeTheme, selectedStreak);
       setSuccessMsg('Age group updated successfully!');
+      setSuccessMsgSeverity('success');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
       setSuccessMsg(err.message || 'Failed to update age group.');
+      setSuccessMsgSeverity('error');
       setTimeout(() => setSuccessMsg(''), 5000);
     } finally {
       setIsLoading(false);
@@ -136,10 +195,12 @@ const Settings = () => {
     try {
       await updateProfile(selectedAge, activeTheme, newStreak);
       setSuccessMsg('Streak calculation mode updated successfully!');
+      setSuccessMsgSeverity('success');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
       setSuccessMsg(err.message || 'Failed to update streak calculation mode.');
+      setSuccessMsgSeverity('error');
       setTimeout(() => setSuccessMsg(''), 5000);
     } finally {
       setIsLoading(false);
@@ -148,33 +209,82 @@ const Settings = () => {
 
   const handleSaveAccount = async () => {
     setSaveAccountLoading(true);
-    setAccountSuccessMsg('');
+    setSuccessMsg('');
     try {
       await updateAccount(tempName, tempEmail, tempPicture);
-      setAccountSuccessMsg('Account details updated successfully!');
-      setTimeout(() => setAccountSuccessMsg(''), 4000);
+      setSuccessMsg('Account details updated successfully!');
+      setSuccessMsgSeverity('success');
+      setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
-      setAccountSuccessMsg(err.message || 'Failed to update account details.');
-      setTimeout(() => setAccountSuccessMsg(''), 5000);
+      setSuccessMsg(err.message || 'Failed to update account details.');
+      setSuccessMsgSeverity('error');
+      setTimeout(() => setSuccessMsg(''), 5000);
     } finally {
       setSaveAccountLoading(false);
     }
   };
 
-  const handleFileChange = (e) => {
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Limit maximum dimensions to 800px to ensure base64 size is small
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+            if (width > height) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            } else {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to JPEG format with 70% quality compression
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        setAccountSuccessMsg('Image size should be less than 2MB.');
-        setTimeout(() => setAccountSuccessMsg(''), 5000);
-        return;
+        try {
+          const compressedBase64 = await compressImage(file);
+          setTempPicture(compressedBase64);
+        } catch (err) {
+          console.error('Image compression failed:', err);
+          setSuccessMsg('Failed to process and compress the image.');
+          setSuccessMsgSeverity('error');
+          setTimeout(() => setSuccessMsg(''), 5000);
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setTempPicture(reader.result);
+        };
+        reader.readAsDataURL(file);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setTempPicture(reader.result);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -182,9 +292,13 @@ const Settings = () => {
     try {
       await setTheme(themeName);
       setSuccessMsg(`Theme changed to ${themeName}!`);
+      setSuccessMsgSeverity('success');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       console.error(err);
+      setSuccessMsg(err.message || 'Failed to update theme.');
+      setSuccessMsgSeverity('error');
+      setTimeout(() => setSuccessMsg(''), 5000);
     }
   };
 
@@ -212,14 +326,6 @@ const Settings = () => {
                 </Typography>
               </Box>
 
-              {accountSuccessMsg && (
-                <Alert 
-                  severity={accountSuccessMsg.toLowerCase().includes('fail') || accountSuccessMsg.toLowerCase().includes('taken') || accountSuccessMsg.toLowerCase().includes('size') ? 'error' : 'success'} 
-                  className="mb-4 rounded-xl"
-                >
-                  {accountSuccessMsg}
-                </Alert>
-              )}
 
               <Box className="space-y-4">
                 <TextField
@@ -277,9 +383,7 @@ const Settings = () => {
                           onChange={handleFileChange}
                         />
                       </Button>
-                      <Typography variant="caption" className="text-[10px] text-themeTextSecondary">
-                        Max 2MB. JPG, PNG, GIF, WebP.
-                      </Typography>
+
                     </Box>
                   </Box>
 
@@ -330,8 +434,13 @@ const Settings = () => {
               <Button
                 variant="contained"
                 onClick={handleSaveAccount}
-                disabled={saveAccountLoading}
-                className="mt-6 bg-orange-500 hover:bg-orange-600 rounded-xl text-white font-medium"
+                disabled={
+                  saveAccountLoading || 
+                  (tempName === (user?.name || '') && 
+                   tempEmail === (user?.email || '') && 
+                   tempPicture === (user?.picture || ''))
+                }
+                className="mt-6 bg-orange-500 hover:bg-orange-600 rounded-xl text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saveAccountLoading ? <CircularProgress size={24} color="inherit" /> : 'Save Account Details'}
               </Button>
@@ -350,11 +459,7 @@ const Settings = () => {
                 </Typography>
               </Box>
 
-              {successMsg && (
-                <Alert severity="success" className="mb-4 rounded-xl">
-                  {successMsg}
-                </Alert>
-              )}
+
 
               <Box className="space-y-4">
                 <Typography variant="subtitle2" className="font-medium text-themeTextSecondary">
@@ -579,7 +684,7 @@ const Settings = () => {
         PaperProps={{
           sx: {
             borderRadius: '20px',
-            bgcolor: 'var(--color-bg-paper, #ffffff)',
+            bgcolor: 'background.paper',
             color: 'var(--color-text, #0f172a)',
             backgroundImage: 'none',
             border: '1px solid var(--color-border, rgba(0, 0, 0, 0.08))',
@@ -635,6 +740,33 @@ const Settings = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Floating success feedback message */}
+      <Snackbar
+        open={Boolean(successMsg)}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMsg('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setSuccessMsg('')} 
+          severity={successMsgSeverity} 
+          variant="filled"
+          sx={{ 
+            width: '100%', 
+            borderRadius: '16px', 
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            bgcolor: successMsgSeverity === 'error' ? 'error.main' : 'success.main',
+            color: '#ffffff',
+            fontWeight: 600,
+            '& .MuiAlert-icon': {
+              color: '#ffffff'
+            }
+          }}
+        >
+          {successMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
