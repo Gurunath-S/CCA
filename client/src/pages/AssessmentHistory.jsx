@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { themePalettes } from '../theme/themeConfig';
+import { aggregateChartData } from '../utils/chartHelpers';
+
 import {
   Box,
   Typography,
@@ -202,15 +204,7 @@ const AssessmentHistory = () => {
 
   const filteredHistory = getFilteredHistory();
 
-  // 1. Line Chart Data: Alignment score trend over time (sorted chronologically)
-  const lineChartData = [...filteredHistory]
-    .reverse() // Make it chronological (oldest to newest)
-    .map(item => ({
-      date: dayjs(item.assessmentDate).format('MMM DD'),
-      fullDate: dayjs(item.assessmentDate),
-      score: item.alignmentScore,
-      character: item.character.name.split(' (')[0] // shorten name
-    }));
+  const lineChartData = aggregateChartData(filteredHistory);
 
   // 2. Radar Chart Data: Holistic mapping of character strengths (average per trait)
   const traitAverages = {};
