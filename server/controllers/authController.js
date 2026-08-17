@@ -30,6 +30,9 @@ exports.googleLogin = async (req, res) => {
 
     if (isMock || !credential) {
       // Mock Sign In for local development
+      if (isMock && process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ message: 'Mock login is disabled in production' });
+      }
       if (!email) {
         return res.status(400).json({ message: 'Email is required for mock login' });
       }
@@ -88,11 +91,22 @@ exports.googleLogin = async (req, res) => {
       }
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'strict' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    };
+
+    res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); // 15 mins
+    res.cookie('refreshToken', refreshToken, cookieOptions);
+
     const isFormPost = req.headers['content-type']?.includes('application/x-www-form-urlencoded');
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     if (isFormPost) {
-      return res.redirect(`${frontendUrl}/login?accessToken=${accessToken}&refreshToken=${refreshToken}&isNewUser=${isNewUser}`);
+      return res.redirect(`${frontendUrl}/login?isNewUser=${isNewUser}`);
     }
 
     res.status(200).json({
@@ -122,7 +136,7 @@ exports.googleLogin = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
 
   if (!refreshToken) {
     return res.status(400).json({ message: 'Refresh token is required' });
@@ -159,6 +173,17 @@ exports.refreshToken = async (req, res) => {
       }
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'strict' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    };
+
+    res.cookie('accessToken', tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+    res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
+
     res.status(200).json({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken
@@ -170,7 +195,7 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.logout = async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
 
   try {
     if (refreshToken) {
@@ -178,6 +203,10 @@ exports.logout = async (req, res) => {
         where: { token: refreshToken }
       });
     }
+
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (err) {
     console.error('Logout error:', err);
