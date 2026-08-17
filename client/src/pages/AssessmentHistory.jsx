@@ -63,6 +63,11 @@ const fadeUp = {
   visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.35, delay: i * 0.08, ease: 'easeOut' } })
 };
 
+const stripHtml = (html) => {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, '').trim();
+};
+
 const AssessmentHistory = () => {
   const { history, fetchHistory, isLoading } = useCharacterStore();
   const { user } = useAuthStore();
@@ -696,7 +701,7 @@ const AssessmentHistory = () => {
                         </TableCell>
                         <TableCell className="text-xs max-w-xs truncate">{item.effortLevel}</TableCell>
                         <TableCell className="text-xs text-slate-500 dark:text-slate-400 italic max-w-md truncate">
-                          {item.personalNote || 'No notes added'}
+                          {stripHtml(item.personalNote) || 'No notes added'}
                         </TableCell>
                       </TableRow>
                     ))}

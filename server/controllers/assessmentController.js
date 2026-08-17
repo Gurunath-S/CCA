@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const sanitizeHtml = require('sanitize-html');
 
 // Create new assessment
 exports.createAssessment = async (req, res) => {
@@ -31,7 +32,12 @@ exports.createAssessment = async (req, res) => {
         consciousEffort: consciousEffort === true || consciousEffort === 'true' || consciousEffort === 'Yes',
         effortLevel: effortLevel || 'I am aware of this trait in my action but hard to practice',
         practiceFrequency: practiceFrequency || 'Didn’t get to practice this',
-        personalNote: personalNote || null
+        personalNote: personalNote ? sanitizeHtml(personalNote, {
+          allowedTags: [ 'p', 'b', 'i', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'blockquote', 'br' ],
+          allowedAttributes: {
+            'a': [ 'href', 'target', 'rel' ]
+          }
+        }) : null
       }
     });
 

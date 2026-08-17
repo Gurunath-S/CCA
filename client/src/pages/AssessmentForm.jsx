@@ -36,6 +36,23 @@ import {
   CalendarToday as DateRangeIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+
+const quillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote'],
+    ['clean']
+  ]
+};
+
+const quillFormats = [
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet',
+  'blockquote'
+];
 
 // Zod Validation Schema matching form requirements
 const assessmentSchema = z.object({
@@ -58,7 +75,7 @@ const assessmentSchema = z.object({
     '1 - 5 times',
     'More than 5 times'
   ].includes(val), 'Invalid option selected'),
-  personalNote: z.string().max(1000, 'Note should not exceed 1000 characters').optional()
+  personalNote: z.string().max(5000, 'Note should not exceed 5000 characters').optional()
 });
 
 const alignmentOptions = [
@@ -664,22 +681,23 @@ const AssessmentForm = () => {
                         name="personalNote"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            multiline
-                            rows={6}
-                            placeholder="Type your reflections here..."
-                            fullWidth
-                            error={!!errors.personalNote}
-                            helperText={errors.personalNote?.message}
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                borderRadius: '20px',
-                                bgcolor: 'var(--color-bg-paper, #ffffff)',
-                                '& fieldset': { borderColor: 'var(--color-border, rgba(0,0,0,0.1))' }
-                              }
-                            }}
-                          />
+                          <Box className="space-y-1">
+                            <Box className="bg-white dark:bg-slate-850 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                              <ReactQuill
+                                theme="snow"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                modules={quillModules}
+                                formats={quillFormats}
+                                placeholder="Type your reflections here..."
+                              />
+                            </Box>
+                            {errors.personalNote && (
+                              <Typography variant="caption" className="text-red-500 block mt-1 ml-1">
+                                {errors.personalNote.message}
+                              </Typography>
+                            )}
+                          </Box>
                         )}
                       />
                     </Box>
