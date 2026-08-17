@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { api, useAuthStore } from '../store/useAuthStore';
 import WorldMap from 'react-svg-worldmap';
 import { themePalettes } from '../theme/themeConfig';
+import dayjs from 'dayjs';
+
 import {
   Box,
   Typography,
@@ -144,18 +146,42 @@ const AdminDashboard = () => {
     }
   };
 
-  // Generate registration trend chronologically
+  // Generate registration trend chronologically with dynamic aggregation
   const getRegistrationTrendData = () => {
-    const counts = {};
-    users.forEach(u => {
-      const dateStr = new Date(u.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      counts[dateStr] = (counts[dateStr] || 0) + 1;
-    });
+    if (users.length === 0) return [];
     
+    // Sort users by createdAt oldest first
+    const sortedUsers = [...users].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const firstDate = dayjs(sortedUsers[0].createdAt);
+    const lastDate = dayjs(sortedUsers[sortedUsers.length - 1].createdAt);
+    const daySpan = lastDate.diff(firstDate, 'day');
+
+    const counts = {};
+    
+    if (daySpan <= 35) {
+      // Group by day
+      sortedUsers.forEach(u => {
+        const dateStr = dayjs(u.createdAt).format('MMM DD');
+        counts[dateStr] = (counts[dateStr] || 0) + 1;
+      });
+    } else if (daySpan <= 365) {
+      // Group by week
+      sortedUsers.forEach(u => {
+        const dateStr = dayjs(u.createdAt).startOf('week').format('MMM DD');
+        counts[dateStr] = (counts[dateStr] || 0) + 1;
+      });
+    } else {
+      // Group by month
+      sortedUsers.forEach(u => {
+        const dateStr = dayjs(u.createdAt).startOf('month').format('MMM YYYY');
+        counts[dateStr] = (counts[dateStr] || 0) + 1;
+      });
+    }
+
     return Object.keys(counts).map(date => ({
       date,
       count: counts[date]
-    })).reverse();
+    }));
   };
 
   // Generate age group distribution
