@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { encrypt, decrypt, hashEmail } = require('../utils/crypto');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -79,7 +80,7 @@ exports.exportData = async (req, res) => {
       exportedAt: new Date().toISOString(),
       account: {
         id: user.id,
-        email: user.email,
+        email: decrypt(user.email),
         name: user.name,
         role: user.role,
         createdAt: user.createdAt,
@@ -147,12 +148,16 @@ exports.updateAccount = async (req, res) => {
     }
 
     // Validate if email is already taken by another user
-    if (email && email.toLowerCase() !== currentUser.email.toLowerCase()) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() }
-      });
-      if (existingUser) {
-        return res.status(400).json({ message: 'Email is already taken by another user' });
+    if (email) {
+      const emailPlain = email.toLowerCase();
+      const currentEmailPlain = decrypt(currentUser.email).toLowerCase();
+      if (emailPlain !== currentEmailPlain) {
+        const existingUser = await prisma.user.findUnique({
+          where: { emailHash: hashEmail(emailPlain) }
+        });
+        if (existingUser) {
+          return res.status(400).json({ message: 'Email is already taken by another user' });
+        }
       }
     }
 
@@ -160,8 +165,9 @@ exports.updateAccount = async (req, res) => {
       where: { id: req.user.id },
       data: {
         name: name !== undefined ? name : undefined,
-        email: email !== undefined ? email.toLowerCase() : undefined,
-        picture: picture !== undefined ? picture : undefined
+        email: email !== undefined ? encrypt(email.toLowerCase()) : undefined,
+        emailHash: email !== undefined ? hashEmail(email.toLowerCase()) : undefined,
+        picture: picture !== undefined ? (picture ? encrypt(picture) : null) : undefined
       },
       include: {
         profile: true
@@ -172,9 +178,9 @@ exports.updateAccount = async (req, res) => {
       message: 'Account details updated successfully',
       user: {
         id: updatedUser.id,
-        email: updatedUser.email,
+        email: decrypt(updatedUser.email),
         name: updatedUser.name,
-        picture: updatedUser.picture,
+        picture: decrypt(updatedUser.picture),
         role: updatedUser.role,
         policyAcknowledged: updatedUser.policyAcknowledged,
         profile: updatedUser.profile
