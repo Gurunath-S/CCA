@@ -367,7 +367,19 @@ const Settings = () => {
                     Profile Picture:
                   </Typography>
                   <Box className="flex items-center gap-4 mb-4">
-                    <Avatar src={tempPicture} alt={tempName} sx={{ width: 64, height: 64 }} className="border border-themeBorder" />
+                    <Avatar 
+                      src={tempPicture || '/avatars/avatar_1.png'} 
+                      alt={tempName} 
+                      imgProps={{
+                        onError: (e) => {
+                          e.target.src = '/avatars/avatar_1.png';
+                        }
+                      }}
+                      sx={{ width: 64, height: 64 }} 
+                      className="border border-themeBorder"
+                    >
+                      {tempName ? tempName.charAt(0).toUpperCase() : 'U'}
+                    </Avatar>
                     <Box className="flex flex-col gap-2">
                       <Button
                         variant="outlined"
