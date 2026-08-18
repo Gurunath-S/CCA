@@ -40,6 +40,14 @@ function App() {
     if (searchParams.has('accessToken') || searchParams.has('isNewUser')) {
       return;
     }
+    
+    // Skip verification for guests who do not have any stored session tokens
+    const hasAccessToken = !!localStorage.getItem('accessToken');
+    const hasRefreshToken = !!localStorage.getItem('refreshToken');
+    if (!hasAccessToken && !hasRefreshToken) {
+      return;
+    }
+
     checkAuth();
   }, [checkAuth]);
 
