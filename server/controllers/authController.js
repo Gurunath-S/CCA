@@ -109,7 +109,7 @@ exports.googleLogin = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     if (isFormPost) {
-      return res.redirect(`${frontendUrl}/login?isNewUser=${isNewUser}`);
+      return res.redirect(`${frontendUrl}/login?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&isNewUser=${isNewUser}`);
     }
 
     res.status(200).json({
