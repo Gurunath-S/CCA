@@ -98,7 +98,9 @@ exports.googleLogin = async (req, res) => {
     const cookieOptions = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
+      // Use 'none' in production so cookies are sent cross-site (Vercel → Render)
+      // 'none' requires secure:true (HTTPS), which is always true on Render
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     };
 
@@ -180,7 +182,7 @@ exports.refreshToken = async (req, res) => {
     const cookieOptions = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     };
 
@@ -207,8 +209,10 @@ exports.logout = async (req, res) => {
       });
     }
 
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const isProd = process.env.NODE_ENV === 'production';
+    const clearOpts = { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' };
+    res.clearCookie('accessToken', clearOpts);
+    res.clearCookie('refreshToken', clearOpts);
 
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (err) {
