@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
 import PolicyAcknowledgmentDialog from './components/PolicyAcknowledgmentDialog';
 import LoginTraitPopup from './components/LoginTraitPopup';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages - Lazy Loaded for 100% navigation and load performance
 const Login = lazy(() => import('./pages/Login'));
@@ -86,6 +87,7 @@ function App() {
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ScrollToTop />
         <PolicyAcknowledgmentDialog />
         <LoginTraitPopup />
         <Suspense fallback={
