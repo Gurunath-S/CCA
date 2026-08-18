@@ -2,6 +2,7 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { encrypt, decrypt, hashEmail } = require('../utils/crypto');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -53,8 +54,9 @@ exports.googleLogin = async (req, res) => {
     }
 
     // Upsert user in database
+    const userEmailHash = hashEmail(userEmail);
     let user = await prisma.user.findUnique({
-      where: { email: userEmail },
+      where: { emailHash: userEmailHash },
       include: { profile: true }
     });
 
@@ -64,9 +66,10 @@ exports.googleLogin = async (req, res) => {
       isNewUser = true;
       user = await prisma.user.create({
         data: {
-          email: userEmail,
+          email: encrypt(userEmail),
+          emailHash: userEmailHash,
           name: userName,
-          picture: userPicture,
+          picture: userPicture ? encrypt(userPicture) : null,
           profile: {
             create: {
               theme: 'Classic'
@@ -115,9 +118,9 @@ exports.googleLogin = async (req, res) => {
       isNewUser,
       user: {
         id: user.id,
-        email: user.email,
+        email: decrypt(user.email),
         name: user.name,
-        picture: user.picture,
+        picture: decrypt(user.picture),
         profile: user.profile,
         role: user.role,
         policyAcknowledged: user.policyAcknowledged
@@ -228,9 +231,9 @@ exports.getMe = async (req, res) => {
     res.status(200).json({
       user: {
         id: user.id,
-        email: user.email,
+        email: decrypt(user.email),
         name: user.name,
-        picture: user.picture,
+        picture: decrypt(user.picture),
         profile: user.profile,
         role: user.role,
         policyAcknowledged: user.policyAcknowledged
@@ -254,9 +257,9 @@ exports.acknowledgePolicy = async (req, res) => {
       message: 'Policy acknowledged successfully',
       user: {
         id: updatedUser.id,
-        email: updatedUser.email,
+        email: decrypt(updatedUser.email),
         name: updatedUser.name,
-        picture: updatedUser.picture,
+        picture: decrypt(updatedUser.picture),
         profile: updatedUser.profile,
         role: updatedUser.role,
         policyAcknowledged: updatedUser.policyAcknowledged
