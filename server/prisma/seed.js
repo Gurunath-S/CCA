@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { encrypt, hashEmail } = require('../utils/crypto');
 
 const defaultAttributes = [
   // Niyama
@@ -74,16 +75,18 @@ async function main() {
   // Seed data for gururider35@gmail.com
   const testEmail = 'gururider35@gmail.com';
   console.log(`Seeding user data for ${testEmail}...`);
+  const testEmailHash = hashEmail(testEmail);
   let user = await prisma.user.findUnique({
-    where: { email: testEmail }
+    where: { emailHash: testEmailHash }
   });
 
   if (!user) {
     user = await prisma.user.create({
       data: {
-        email: testEmail,
+        email: encrypt(testEmail),
+        emailHash: testEmailHash,
         name: 'Guru Rider',
-        picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+        picture: encrypt('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'),
         role: 'ADMIN',
         profile: {
           create: {
@@ -226,14 +229,16 @@ async function main() {
   ];
 
   for (const mock of mockUsers) {
+    const mockEmailHash = hashEmail(mock.email);
     const existingUser = await prisma.user.findUnique({
-      where: { email: mock.email }
+      where: { emailHash: mockEmailHash }
     });
 
     if (!existingUser) {
       await prisma.user.create({
         data: {
-          email: mock.email,
+          email: encrypt(mock.email),
+          emailHash: mockEmailHash,
           name: mock.name,
           role: 'USER',
           profile: {
