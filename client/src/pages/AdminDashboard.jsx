@@ -67,35 +67,6 @@ const AdminDashboard = () => {
   const [toastMsg, setToastMsg] = useState('');
   const [toastSeverity, setToastSeverity] = useState('success');
   const [countryPage, setCountryPage] = useState(1);
-  const [mapZoomMode, setMapZoomMode] = useState('fit'); // 'fit' or 'zoom'
-
-  const scrollRef = React.useRef(null);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-
-  const handleMouseDown = (e) => {
-    if (mapZoomMode !== 'zoom') return;
-    setIsMouseDown(true);
-    setStartX(e.pageX - (scrollRef.current?.offsetLeft || 0));
-    setScrollLeft(scrollRef.current?.scrollLeft || 0);
-  };
-
-  const handleMouseLeave = () => {
-    setIsMouseDown(false);
-  };
-
-  const handleMouseUp = () => {
-    setIsMouseDown(false);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isMouseDown || mapZoomMode !== 'zoom' || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5;
-    scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
 
   // Global Attributes filters
   const [attrSearch, setAttrSearch] = useState('');
@@ -512,73 +483,17 @@ const AdminDashboard = () => {
                   <Grid container spacing={4} alignItems="flex-start">
                     {/* World Map Visualization */}
                     <Grid item xs={12} md={7} className="w-full">
-                      {/* Zoom/Pan Toggle Controls */}
-                      <Box className="flex justify-end gap-2 mb-2.5 max-w-[550px] mx-auto">
-                        <Button 
-                          size="small"
-                          onClick={() => setMapZoomMode('fit')}
-                          className="text-2xs px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-800 font-semibold transition-all"
-                          style={{
-                            backgroundColor: mapZoomMode === 'fit' ? primaryColor : 'transparent',
-                            color: mapZoomMode === 'fit' ? '#fff' : 'inherit',
-                            borderColor: mapZoomMode === 'fit' ? primaryColor : undefined
-                          }}
-                        >
-                          Fit Screen
-                        </Button>
-                        <Button 
-                          size="small"
-                          onClick={() => setMapZoomMode('zoom')}
-                          className="text-2xs px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-800 font-semibold transition-all"
-                          style={{
-                            backgroundColor: mapZoomMode === 'zoom' ? primaryColor : 'transparent',
-                            color: mapZoomMode === 'zoom' ? '#fff' : 'inherit',
-                            borderColor: mapZoomMode === 'zoom' ? primaryColor : undefined
-                          }}
-                        >
-                          Zoom & Pan 🔍
-                        </Button>
+                      <Box className="w-full max-w-[550px] bg-slate-50 dark:bg-slate-950/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 location-map-container mx-auto">
+                        <WorldMap
+                          color={primaryColor}
+                          backgroundColor="transparent"
+                          borderColor="#cbd5e1"
+                          title=""
+                          valueSuffix=" users"
+                          size="responsive"
+                          data={getCountryDistributionForMap()}
+                        />
                       </Box>
-
-                      {mapZoomMode === 'fit' ? (
-                        <Box className="w-full max-w-[550px] bg-slate-50 dark:bg-slate-950/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 location-map-container mx-auto flex justify-center">
-                          <WorldMap
-                            color={primaryColor}
-                            backgroundColor="transparent"
-                            borderColor="#cbd5e1"
-                            title=""
-                            valueSuffix=" users"
-                            size="responsive"
-                            data={getCountryDistributionForMap()}
-                          />
-                        </Box>
-                      ) : (
-                        <>
-                          <Box 
-                            ref={scrollRef}
-                            onMouseDown={handleMouseDown}
-                            onMouseLeave={handleMouseLeave}
-                            onMouseUp={handleMouseUp}
-                            onMouseMove={handleMouseMove}
-                            className="w-full max-w-[550px] overflow-x-auto bg-slate-50 dark:bg-slate-950/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 location-map-container mx-auto cursor-grab active:cursor-grabbing select-none"
-                          >
-                            <Box sx={{ minWidth: '650px', display: 'flex', justifyContent: 'center', width: '100%' }}>
-                              <WorldMap
-                                color={primaryColor}
-                                backgroundColor="transparent"
-                                borderColor="#cbd5e1"
-                                title=""
-                                valueSuffix=" users"
-                                size={600}
-                                data={getCountryDistributionForMap()}
-                              />
-                            </Box>
-                          </Box>
-                          <Typography variant="caption" className="text-center block text-slate-400 mt-2">
-                            ↔ Swipe or click-and-drag map to pan
-                          </Typography>
-                        </>
-                      )}
                     </Grid>
 
                     {/* Country List Breakdown */}
