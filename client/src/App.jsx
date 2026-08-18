@@ -35,8 +35,13 @@ function App() {
 
   // Validate session on mount
   React.useEffect(() => {
+    // Skip verification if we are currently handling a redirect callback in the URL
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('accessToken') || searchParams.has('isNewUser')) {
+      return;
+    }
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   // Geolocation detection for user country & city
   React.useEffect(() => {

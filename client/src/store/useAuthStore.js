@@ -32,9 +32,15 @@ export const useAuthStore = create((set, get) => {
       set({ isLoading: true, error: null });
       try {
         const data = await authService.loginWithGoogle({ credential, isMock, email, name, picture });
-        const { user, isNewUser } = data;
+        const { user, isNewUser, accessToken, refreshToken } = data;
 
         localStorage.setItem('user', JSON.stringify(user));
+        if (accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+        }
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
 
         syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
@@ -278,13 +284,16 @@ export const useAuthStore = create((set, get) => {
         set({ user, isAuthenticated: true, isLoading: false });
         return true;
       } catch (err) {
-        if (err.response?.status !== 401 && err.response?.status !== 400) {
-          console.error('Auth verification failed:', err);
+        const status = err.response?.status;
+        if (status === 400 || status === 401 || status === 403) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          set({ user: null, isAuthenticated: false });
+        } else {
+          console.error('Auth verification failed (network/server error):', err);
         }
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        set({ isLoading: false });
         return false;
       }
     }

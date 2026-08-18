@@ -2,14 +2,17 @@ const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
   try {
-    // Look for token in cookies first, fall back to Authorization header
-    let token = req.cookies?.accessToken;
+    let token = null;
 
+    // Check Authorization header first (explicit client intent)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+
+    // Fall back to cookies
     if (!token) {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.split(' ')[1];
-      }
+      token = req.cookies?.accessToken;
     }
 
     if (!token) {

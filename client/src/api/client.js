@@ -71,8 +71,13 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Send refresh token request (cookies are automatically attached)
-        const response = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
+        // Send refresh token request (cookies are automatically attached, with localStorage fallback in body)
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+        const response = await axios.post(
+          `${API_URL}/auth/refresh`,
+          { refreshToken: storedRefreshToken },
+          { withCredentials: true }
+        );
         const { accessToken } = response.data;
 
         // If client fallback is active, save new token
