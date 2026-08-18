@@ -55,6 +55,16 @@ const MainLayout = ({ children }) => {
   
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  React.useEffect(() => {
+    if (isMobile && mobileOpen) {
+      const originalStyle = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [mobileOpen, isMobile]);
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
