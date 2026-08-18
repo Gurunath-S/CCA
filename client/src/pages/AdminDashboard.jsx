@@ -482,18 +482,23 @@ const AdminDashboard = () => {
                 ) : (
                   <Grid container spacing={4} alignItems="flex-start">
                     {/* World Map Visualization */}
-                    <Grid item xs={12} md={7} className="flex justify-center items-start">
-                      <Box className="w-full max-w-[550px] overflow-hidden flex justify-center bg-slate-50 dark:bg-slate-950/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 location-map-container">
-                        <WorldMap
-                          color={primaryColor}
-                          backgroundColor="transparent"
-                          borderColor="#cbd5e1"
-                          title=""
-                          valueSuffix=" users"
-                          size={480}
-                          data={getCountryDistributionForMap()}
-                        />
+                    <Grid item xs={12} md={7} className="w-full">
+                      <Box className="w-full max-w-[550px] overflow-x-auto flex justify-start md:justify-center bg-slate-50 dark:bg-slate-950/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 location-map-container mx-auto">
+                        <Box sx={{ minWidth: '480px', display: 'flex', justifyContent: 'center', width: '100%' }}>
+                          <WorldMap
+                            color={primaryColor}
+                            backgroundColor="transparent"
+                            borderColor="#cbd5e1"
+                            title=""
+                            valueSuffix=" users"
+                            size={480}
+                            data={getCountryDistributionForMap()}
+                          />
+                        </Box>
                       </Box>
+                      <Typography variant="caption" className="text-center block text-slate-400 mt-2 md:hidden">
+                        ↔ Swipe horizontally to pan map
+                      </Typography>
                     </Grid>
 
                     {/* Country List Breakdown */}
