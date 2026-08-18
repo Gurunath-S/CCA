@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { decrypt, hashEmail } = require('../utils/crypto');
 
 // List all users with basic metadata, usage metrics and filtering
 exports.getUsers = async (req, res) => {
@@ -12,7 +13,7 @@ exports.getUsers = async (req, res) => {
     if (search) {
       whereConditions.OR = [
         { name: { contains: search } },
-        { email: { contains: search } }
+        { emailHash: hashEmail(search) }
       ];
     }
 
@@ -49,7 +50,13 @@ exports.getUsers = async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    res.status(200).json({ users });
+    const decryptedUsers = users.map(user => ({
+      ...user,
+      email: decrypt(user.email),
+      picture: decrypt(user.picture)
+    }));
+
+    res.status(200).json({ users: decryptedUsers });
   } catch (err) {
     console.error('getUsers admin error:', err);
     res.status(500).json({ message: 'Server error fetching users list' });
@@ -125,8 +132,14 @@ exports.getUserDetail = async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
+    const decryptedUser = {
+      ...user,
+      email: decrypt(user.email),
+      picture: decrypt(user.picture)
+    };
+
     res.status(200).json({
-      user,
+      user: decryptedUser,
       assessments,
       notes
     });
