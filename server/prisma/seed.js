@@ -145,27 +145,82 @@ async function main() {
       'I am able to practice this without lot of effort'
     ];
     const frequencyOptions = [
-      'Didn’t get to practice this',
+      'Didn\'t get to practice this',
       '1 - 5 times',
       'More than 5 times'
     ];
 
-    for (let i = 1; i <= 766; i++) {
+    const totalDays = 1825; // 5 years of daily data
+
+    // Thoughtful reflection notes per trait category
+    const reflectionPhrases = {
+      Niyama: [
+        'Maintained discipline and felt inner clarity today.',
+        'Struggled with consistency but made conscious effort.',
+        'Practiced self-study and found new insights.',
+        'Contentment was my anchor during a stressful day.',
+        'Surrender to the moment helped me stay at peace.'
+      ],
+      Yama: [
+        'Chose kindness over reaction — a small win.',
+        'Non-greed practice: resisted impulse to accumulate.',
+        'Truthfulness required courage today. Worth it.',
+        'Practiced restraint in speech and action.',
+        'Non-violence in thought is harder than in action — noticing this more.'
+      ],
+      General: [
+        'Felt more confident in expressing my perspective.',
+        'Relied on inner resources instead of seeking external validation.',
+        'Diligence brought results today — steady effort pays off.',
+        'Patience tested and held — growth visible.',
+        'Took initiative in a situation where I previously hesitated.'
+      ]
+    };
+
+    for (let i = 1; i <= totalDays; i++) {
       const attr = dbAttributes[i % dbAttributes.length];
-      const alignmentScore = (i % 5) + 1; // 1 to 5
-      const consciousEffort = (i % 3) !== 0;
-      const othersRecognize = recognitionOptions[i % recognitionOptions.length];
-      const effortLevel = effortLevelOptions[i % effortLevelOptions.length];
-      const practiceFrequency = frequencyOptions[i % frequencyOptions.length];
-      const personalNote = `Reflection Note Day ${i}: Consciously worked on ${attr.name}. Felt progressive.`;
+
+      // Natural sine-wave score variation (1–5) simulating gradual growth with dips
+      const progress = i / totalDays; // 0 → 1 over 5 years
+      const wave = Math.sin((i / 30) * Math.PI); // monthly oscillation
+      const baseScore = 2 + progress * 2 + wave * 0.8; // trends from ~2 to ~4 with waves
+      const alignmentScore = Math.min(5, Math.max(1, Math.round(baseScore)));
+
+      // Effort improves over time
+      const effortIdx = progress < 0.33
+        ? 0
+        : progress < 0.66
+          ? (i % 2 === 0 ? 0 : 1)
+          : (i % 3 === 0 ? 1 : 2);
+
+      // Frequency improves with time
+      const freqIdx = progress < 0.4
+        ? (i % 3 === 0 ? 0 : 1)
+        : progress < 0.75
+          ? (i % 4 === 0 ? 0 : i % 2 === 0 ? 1 : 2)
+          : (i % 5 === 0 ? 0 : 2);
+
+      // Recognition improves over years
+      const recogIdx = progress < 0.25 ? 2
+        : progress < 0.5 ? (i % 2 === 0 ? 2 : 1)
+        : progress < 0.75 ? (i % 3 === 0 ? 1 : 0)
+        : (i % 6 === 0 ? 1 : 0);
+
+      // Conscious effort nearly always true in later years
+      const consciousEffort = progress > 0.6 ? true : (i % 3 !== 0);
+
+      // Select a meaningful reflection note
+      const categoryNotes = reflectionPhrases[attr.category] || reflectionPhrases.General;
+      const noteText = categoryNotes[i % categoryNotes.length];
+      const personalNote = `Day ${i} — ${attr.name}: ${noteText}`;
 
       mockAssessments.push({
         attrName: attr.name,
         alignmentScore,
-        othersRecognize,
+        othersRecognize: recognitionOptions[recogIdx],
         consciousEffort,
-        effortLevel,
-        practiceFrequency,
+        effortLevel: effortLevelOptions[effortIdx],
+        practiceFrequency: frequencyOptions[freqIdx],
         personalNote,
         daysAgo: i
       });
