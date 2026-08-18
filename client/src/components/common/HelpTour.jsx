@@ -13,8 +13,9 @@ const steps = [
   {
     target: 'tour-sidebar',
     title: 'Navigation Sidebar',
-    content: 'Easily navigate between the Dashboard, list of Character Attributes, Assessment History, Reflective Journal, and your Account Settings.',
-    placement: 'right'
+    content: 'Your main navigation controls:\n• Dashboard: View streaks, daily traits, and start quick assessments.\n• Character Attributes: Explore all virtues, or create custom ones.\n• Assessment History: Trace progress charts and past assessment logs.\n• Reflective Journal: Review and search your personal reflection notes.\n• Inspiration: Find daily quotes and wisdom for contemplation.\n• Settings: Adjust streak type, change UI themes, or export data.',
+    placement: 'right',
+    padding: 0
   },
   {
     target: 'tour-stats-streak',
@@ -41,19 +42,42 @@ export const HelpTour = ({ open, onClose }) => {
   const [highlightStyle, setHighlightStyle] = useState(null);
   const [tooltipStyle, setTooltipStyle] = useState(null);
 
+  const getActiveStepData = () => {
+    const step = { ...steps[currentStep] };
+    const element = document.getElementById(step.target);
+    
+    // Adapt target, padding and contents if sidebar is requested but hidden on mobile
+    if (step.target === 'tour-sidebar' && !element && document.getElementById('tour-mobile-menu')) {
+      return {
+        ...step,
+        placement: 'bottom',
+        padding: 8,
+        content: 'Tap the Menu Icon to open the Sidebar and navigate between:\n• Dashboard & Streaks\n• Character Attributes (virtues library)\n• Assessment History & Reflective Journal\n• Inspiration & Settings'
+      };
+    }
+    return step;
+  };
+
+  const activeStep = getActiveStepData();
+
   useEffect(() => {
     if (!open) {
       setCurrentStep(0);
       return;
     }
 
-    const step = steps[currentStep];
-    const element = document.getElementById(step.target);
+    const step = getActiveStepData();
+    let element = document.getElementById(step.target);
+
+    // Fallback for mobile sidebar target
+    if (step.target === 'tour-sidebar' && !element) {
+      element = document.getElementById('tour-mobile-menu');
+    }
 
     const updatePosition = () => {
       if (element) {
         const rect = element.getBoundingClientRect();
-        const pad = 12;
+        const pad = step.padding !== undefined ? step.padding : 12;
 
         setHighlightStyle({
           position: 'fixed',
@@ -127,6 +151,9 @@ export const HelpTour = ({ open, onClose }) => {
         });
       }
     };
+
+    // Calculate position immediately to avoid coordinate jump/flicker
+    updatePosition();
 
     // Wait slightly to ensure rendering/animations of underlying elements are complete
     const timer = setTimeout(updatePosition, 100);
@@ -217,13 +244,25 @@ export const HelpTour = ({ open, onClose }) => {
 
               <Box sx={{ pr: 2, mb: 1.5 }}>
                 <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: '"Playfair Display", serif', color: 'inherit' }}>
-                  {steps[currentStep].title}
+                  {activeStep.title}
                 </Typography>
               </Box>
 
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, lineHeight: 1.6 }}>
-                {steps[currentStep].content}
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                {activeStep.content}
               </Typography>
+
+              {/* Coming Up Next preview box */}
+              {currentStep < steps.length - 1 && (
+                <Box sx={{ mb: 3, p: 1.5, bgcolor: 'action.hover', borderRadius: '12px', border: '1px dashed var(--color-border, rgba(0, 0, 0, 0.08))' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#f97316', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+                    Coming Up Next
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    {steps[currentStep + 1].title}
+                  </Typography>
+                </Box>
+              )}
 
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <MobileStepper

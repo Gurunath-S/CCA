@@ -227,6 +227,7 @@ const MainLayout = ({ children }) => {
           >
             <Toolbar className="flex justify-between px-4">
               <IconButton
+                id="tour-mobile-menu"
                 color="inherit"
                 edge="start"
                 onClick={handleDrawerToggle}
