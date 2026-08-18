@@ -18,18 +18,31 @@ import PolicyAcknowledgmentDialog from './components/PolicyAcknowledgmentDialog'
 import LoginTraitPopup from './components/LoginTraitPopup';
 import ScrollToTop from './components/ScrollToTop';
 
+// Helper to retry dynamic imports (ChunkLoadError recovery) when new builds are deployed
+const lazyWithRetry = (componentImport) => {
+  return lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      console.error("Chunk loading failed. Reloading page to fetch latest build...", error);
+      window.location.reload();
+      return { default: () => null };
+    }
+  });
+};
+
 // Pages - Lazy Loaded for 100% navigation and load performance
-const Login = lazy(() => import('./pages/Login'));
-const UserProfileSetup = lazy(() => import('./pages/UserProfileSetup'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const CharacterListing = lazy(() => import('./pages/CharacterListing'));
-const AssessmentForm = lazy(() => import('./pages/AssessmentForm'));
-const AssessmentAggregate = lazy(() => import('./pages/AssessmentAggregate'));
-const AssessmentHistory = lazy(() => import('./pages/AssessmentHistory'));
-const PersonalNotes = lazy(() => import('./pages/PersonalNotes'));
-const Inspiration = lazy(() => import('./pages/Inspiration'));
-const Settings = lazy(() => import('./pages/Settings'));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const UserProfileSetup = lazyWithRetry(() => import('./pages/UserProfileSetup'));
+const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
+const CharacterListing = lazyWithRetry(() => import('./pages/CharacterListing'));
+const AssessmentForm = lazyWithRetry(() => import('./pages/AssessmentForm'));
+const AssessmentAggregate = lazyWithRetry(() => import('./pages/AssessmentAggregate'));
+const AssessmentHistory = lazyWithRetry(() => import('./pages/AssessmentHistory'));
+const PersonalNotes = lazyWithRetry(() => import('./pages/PersonalNotes'));
+const Inspiration = lazyWithRetry(() => import('./pages/Inspiration'));
+const Settings = lazyWithRetry(() => import('./pages/Settings'));
+const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'));
 
 function App() {
   const { user, checkAuth } = useAuthStore();
