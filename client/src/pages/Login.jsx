@@ -58,7 +58,8 @@ const Login = () => {
 
   useEffect(() => {
     const initializeGoogleSignIn = () => {
-      if (window.google) {
+      const btnContainer = document.getElementById("google-signin-button");
+      if (window.google && btnContainer) {
         const apiBaseUrl = import.meta.env.VITE_API_URL 
           ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
           : 'http://localhost:5000';
@@ -70,7 +71,7 @@ const Login = () => {
         });
         
         window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-button"),
+          btnContainer,
           { 
             theme: "outline", 
             size: "large", 
@@ -79,6 +80,8 @@ const Login = () => {
             shape: "pill" 
           }
         );
+      } else if (window.google && !btnContainer) {
+        setTimeout(initializeGoogleSignIn, 100);
       }
     };
 
