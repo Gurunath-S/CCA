@@ -278,7 +278,9 @@ export const useAuthStore = create((set, get) => {
         set({ user, isAuthenticated: true, isLoading: false });
         return true;
       } catch (err) {
-        console.error('Auth verification failed:', err);
+        if (err.response?.status !== 401 && err.response?.status !== 400) {
+          console.error('Auth verification failed:', err);
+        }
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
