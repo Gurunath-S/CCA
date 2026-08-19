@@ -10,7 +10,7 @@ export const useCharacterStore = create((set, get) => ({
   selectedCharacterStats: null,
   
   // Granular loading states for fine-grained UI re-rendering performance
-  isLoading: false,
+  isLoading: true,
   isCharactersLoading: false,
   isHistoryLoading: false,
   isNotesLoading: false,
