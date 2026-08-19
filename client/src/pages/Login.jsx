@@ -96,9 +96,9 @@ const Login = () => {
         window.google.accounts.id.renderButton(
           btnContainer,
           { 
-            theme: "outline", 
+            theme: "filled_blue", 
             size: "large", 
-            width: "320", 
+            width: 220, 
             text: "signin_with", 
             shape: "pill" 
           }
@@ -276,44 +276,11 @@ const Login = () => {
             <CircularProgress size={30} style={{ color: '#f97316' }} />
           ) : (
             <>
-              {/* Google Button Wrapper with Overlay */}
+              {/* Official Google Sign-In Button Container */}
               <div 
-                className="group relative" 
-                style={{ 
-                  width: '280px', 
-                  height: '46px',
-                }}
-              >
-                {/* Custom Styled Animated Google Button */}
-                <button 
-                  className="uiverse-btn absolute top-0 left-0 z-1 pointer-events-none select-none"
-                  type="button"
-                >
-                  Sign In with Google
-                  <svg fill="currentColor" viewBox="0 0 24 24" className="icon">
-                    <path
-                      clipRule="evenodd"
-                      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z"
-                      fillRule="evenodd"
-                    />
-                  </svg>
-                </button>
-
-                {/* The actual underlying transparent Google Sign-In button container */}
-                <div 
-                  id="google-signin-button" 
-                  style={{ 
-                    position: 'absolute', 
-                    top: 0, 
-                    left: 0, 
-                    width: '100%', 
-                    height: '100%', 
-                    opacity: 0, 
-                    zIndex: 10,
-                    cursor: 'pointer'
-                  }} 
-                />
-              </div>
+                id="google-signin-button" 
+                className="min-h-[46px] flex items-center justify-center transition-transform hover:scale-[1.02]"
+              />
 
               {/* Auxiliary Actions */}
               <Box className="flex flex-col items-center mt-6 px-4">
