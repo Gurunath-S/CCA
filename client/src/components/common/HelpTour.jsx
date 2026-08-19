@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const steps = [
   {
-    target: 'tour-welcome-banner',
+    target: 'tour-welcome-and-stats',
     title: 'Welcome to Character Coach!',
-    content: 'This dashboard is your hub for building strength of character. Our practice focuses on core ethical values (Yamas & Niyamas) to guide your daily reflection and personal growth.',
+    content: 'This dashboard is your hub for building strength of character. Here you can:\n• Launch reflections and explore virtues (Welcome Banner).\n• Track your total self-reflection sessions.\n• Monitor your streak consistency.\n• See your most practiced character trait.',
     placement: 'bottom'
   },
   {
@@ -74,6 +74,11 @@ export const HelpTour = ({ open, onClose }) => {
       element = document.getElementById('tour-mobile-menu');
     }
 
+    if (element) {
+      // Smoothly scroll the target element into the viewport center
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     const updatePosition = () => {
       if (element) {
         const rect = element.getBoundingClientRect();
@@ -93,21 +98,29 @@ export const HelpTour = ({ open, onClose }) => {
         let tTop = 0;
         let tLeft = 0;
 
-        if (step.placement === 'bottom') {
+        // Responsive override: on smaller screens, placement 'left'/'right' becomes 'bottom'
+        let placement = step.placement;
+        if (window.innerWidth < 1024) {
+          if (placement === 'left' || placement === 'right') {
+            placement = 'bottom';
+          }
+        }
+
+        if (placement === 'bottom') {
           tTop = rect.bottom + tooltipPad;
           tLeft = rect.left + (rect.width / 2) - 175;
-        } else if (step.placement === 'top') {
-          tTop = rect.top - 200 - tooltipPad;
+        } else if (placement === 'top') {
+          tTop = rect.top - 260 - tooltipPad;
           tLeft = rect.left + (rect.width / 2) - 175;
-        } else if (step.placement === 'right') {
-          tTop = rect.top + (rect.height / 2) - 100;
+        } else if (placement === 'right') {
+          tTop = rect.top + (rect.height / 2) - 130;
           tLeft = rect.right + tooltipPad;
-        } else if (step.placement === 'left') {
-          tTop = rect.top + (rect.height / 2) - 100;
+        } else if (placement === 'left') {
+          tTop = rect.top + (rect.height / 2) - 130;
           tLeft = rect.left - 350 - tooltipPad;
         }
 
-        // Bound validation
+        // Bound validation to keep tooltip inside the viewport boundaries
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
@@ -139,17 +152,24 @@ export const HelpTour = ({ open, onClose }) => {
       }
     };
 
-    // Calculate position immediately to avoid coordinate jump/flicker
+    // Calculate position immediately
     updatePosition();
 
-    // Wait slightly to ensure rendering/animations of underlying elements are complete
-    const timer = setTimeout(updatePosition, 50);
+    // Recalculate periodically as smooth scrolling progresses to ensure clean alignment
+    const timers = [
+      setTimeout(updatePosition, 50),
+      setTimeout(updatePosition, 150),
+      setTimeout(updatePosition, 300),
+      setTimeout(updatePosition, 450),
+      setTimeout(updatePosition, 600),
+      setTimeout(updatePosition, 950)
+    ];
 
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
 
     return () => {
-      clearTimeout(timer);
+      timers.forEach(clearTimeout);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
