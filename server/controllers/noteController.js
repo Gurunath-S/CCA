@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const sanitizeHtml = require('sanitize-html');
 
 // Get all notes for a character attribute
 exports.getNotes = async (req, res) => {
@@ -32,6 +33,19 @@ exports.upsertNote = async (req, res) => {
     return res.status(400).json({ message: 'Note content cannot be empty' });
   }
 
+  // Sanitize HTML content to prevent XSS (allowing standard formatting tags)
+  const sanitizedContent = sanitizeHtml(content.trim(), {
+    allowedTags: [ 'b', 'i', 'em', 'strong', 'a', 'p', 'ul', 'ol', 'li', 'blockquote', 'br' ],
+    allowedAttributes: {
+      'a': [ 'href', 'target', 'rel' ]
+    },
+    allowedSchemes: [ 'http', 'https', 'mailto' ]
+  });
+
+  if (!sanitizedContent || sanitizedContent.trim() === '') {
+    return res.status(400).json({ message: 'Note content cannot be empty or invalid' });
+  }
+
   try {
     if (noteId) {
       // Update existing note
@@ -45,7 +59,7 @@ exports.upsertNote = async (req, res) => {
 
       const updatedNote = await prisma.personalNote.update({
         where: { id: noteId },
-        data: { content: content.trim() }
+        data: { content: sanitizedContent }
       });
 
       return res.status(200).json({
@@ -62,7 +76,7 @@ exports.upsertNote = async (req, res) => {
         data: {
           userId,
           characterId,
-          content: content.trim()
+          content: sanitizedContent
         }
       });
 

@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../store/useAuthStore';
+import { api, useAuthStore } from '../store/useAuthStore';
+import WorldMap from 'react-svg-worldmap';
+import { themePalettes } from '../theme/themeConfig';
+import dayjs from 'dayjs';
+
 import {
   Box,
   Typography,
@@ -13,19 +17,12 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
-  TableHead,
   Paper,
-  Avatar,
   Button,
   Chip,
   CircularProgress,
   Alert,
-  Skeleton
+  Snackbar
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,33 +31,42 @@ import {
   Book as NotesIcon,
   Add as AddIcon
 } from '@mui/icons-material';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Cell
+} from 'recharts';
 
 const AdminDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
+  const { user } = useAuthStore();
+  const activeTheme = user?.profile?.theme || 'Classic';
+  const themePalette = themePalettes[activeTheme] || themePalettes.Classic;
+  const primaryColor = themePalette.primary.main;
+
   const [users, setUsers] = useState([]);
   const [globalAttributes, setGlobalAttributes] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
   const [error, setError] = useState('');
 
-  // User list filters
-  const [userSearch, setUserSearch] = useState('');
-  const [userAgeFilter, setUserAgeFilter] = useState('All');
-
-  // Infinite scroll state
-  const [userPage, setUserPage] = useState(0);
-  const userRowsPerPage = 8; // fixed page size for infinite scroll
-  const [displayedUsers, setDisplayedUsers] = useState([]);
-  const [isScrollLoading, setIsScrollLoading] = useState(false);
-  const tableContainerRef = React.useRef(null);
+  // We no longer need user list filters or infinite scroll state
 
   // New Attribute Form
   const [newAttrName, setNewAttrName] = useState('');
   const [newAttrCategory, setNewAttrCategory] = useState('General');
   const [newAttrDesc, setNewAttrDesc] = useState('');
   const [isSavingAttribute, setIsSavingAttribute] = useState(false);
-  const [attrError, setAttrError] = useState('');
-  const [attrSuccess, setAttrSuccess] = useState('');
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastSeverity, setToastSeverity] = useState('success');
+  const [countryPage, setCountryPage] = useState(1);
 
   // Global Attributes filters
   const [attrSearch, setAttrSearch] = useState('');
@@ -109,11 +115,11 @@ const AdminDashboard = () => {
   // Handle adding new global attribute
   const handleCreateGlobalAttribute = async (e) => {
     e.preventDefault();
-    setAttrError('');
-    setAttrSuccess('');
+    setToastMsg('');
     
     if (!newAttrName.trim()) {
-      setAttrError('Attribute name is required');
+      setToastMsg('Attribute name is required');
+      setToastSeverity('error');
       return;
     }
 
@@ -125,61 +131,155 @@ const AdminDashboard = () => {
         description: newAttrDesc.trim()
       });
 
-      setAttrSuccess(response.data.message || 'Global attribute created successfully!');
+      setToastMsg(response.data.message || 'Global attribute created successfully!');
+      setToastSeverity('success');
       setNewAttrName('');
       setNewAttrDesc('');
       fetchGlobalAttributes();
       fetchUsers(); // Refresh counts if needed
     } catch (err) {
       console.error(err);
-      setAttrError(err.response?.data?.message || 'Failed to create global attribute');
+      setToastMsg(err.response?.data?.message || 'Failed to create global attribute');
+      setToastSeverity('error');
     } finally {
       setIsSavingAttribute(false);
     }
   };
 
-  // Filter local users list
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch = 
-      u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email?.toLowerCase().includes(userSearch.toLowerCase());
+  // Generate registration trend chronologically with dynamic aggregation
+  const getRegistrationTrendData = () => {
+    if (users.length === 0) return [];
     
-    const matchesAge = 
-      userAgeFilter === 'All' || 
-      u.profile?.ageGroup === userAgeFilter;
+    // Sort users by createdAt oldest first
+    const sortedUsers = [...users].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const firstDate = dayjs(sortedUsers[0].createdAt);
+    const lastDate = dayjs(sortedUsers[sortedUsers.length - 1].createdAt);
+    const daySpan = lastDate.diff(firstDate, 'day');
 
-    return matchesSearch && matchesAge;
-  });
-
-  // Handle container scroll for infinite scroll pagination
-  const handleScroll = (e) => {
-    const container = e.currentTarget;
-    if (!container) return;
-
-    // Check if scroll position is near the bottom
-    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
-
-    if (isAtBottom && !isLoadingUsers && !isScrollLoading && displayedUsers.length < filteredUsers.length) {
-      setIsScrollLoading(true);
-      setTimeout(() => {
-        setUserPage((prevPage) => prevPage + 1);
-        setIsScrollLoading(false);
-      }, 500); // simulated load delay for premium skeleton loading transition
+    const counts = {};
+    
+    if (daySpan <= 35) {
+      // Group by day
+      sortedUsers.forEach(u => {
+        const dateStr = dayjs(u.createdAt).format('MMM DD');
+        counts[dateStr] = (counts[dateStr] || 0) + 1;
+      });
+    } else if (daySpan <= 365) {
+      // Group by week
+      sortedUsers.forEach(u => {
+        const dateStr = dayjs(u.createdAt).startOf('week').format('MMM DD');
+        counts[dateStr] = (counts[dateStr] || 0) + 1;
+      });
+    } else {
+      // Group by month
+      sortedUsers.forEach(u => {
+        const dateStr = dayjs(u.createdAt).startOf('month').format('MMM YYYY');
+        counts[dateStr] = (counts[dateStr] || 0) + 1;
+      });
     }
+
+    return Object.keys(counts).map(date => ({
+      date,
+      count: counts[date]
+    }));
   };
 
-  // Reset page and displayed users when search parameters or complete list of users changes
-  useEffect(() => {
-    setUserPage(0);
-    setDisplayedUsers(filteredUsers.slice(0, userRowsPerPage));
-  }, [userSearch, userAgeFilter, users]);
+  // Generate age group distribution
+  const getAgeDistributionData = () => {
+    const groups = {
+      '15–20': 0,
+      '20–25': 0,
+      '25–30': 0,
+      '30–40': 0,
+      '40–50': 0,
+      '50–60': 0,
+      'Above 60': 0,
+      'N/A': 0
+    };
+    
+    users.forEach(u => {
+      const age = u.profile?.ageGroup || 'N/A';
+      if (groups[age] !== undefined) {
+        groups[age]++;
+      } else {
+        groups['N/A']++;
+      }
+    });
+    
+    return Object.keys(groups).map(name => ({
+      name,
+      count: groups[name]
+    }));
+  };
 
-  // Load more users when page increases
-  useEffect(() => {
-    if (userPage > 0) {
-      setDisplayedUsers(filteredUsers.slice(0, (userPage + 1) * userRowsPerPage));
-    }
-  }, [userPage, filteredUsers]);
+  // Country code mapping dictionary
+  const countryNameMap = {
+    in: 'India',
+    us: 'United States',
+    ca: 'Canada',
+    gb: 'United Kingdom',
+    au: 'Australia',
+    de: 'Germany',
+    fr: 'France',
+    jp: 'Japan',
+    cn: 'China',
+    br: 'Brazil',
+    za: 'South Africa',
+    ru: 'Russia',
+    mx: 'Mexico',
+    it: 'Italy',
+    es: 'Spain',
+    sg: 'Singapore',
+    ae: 'United Arab Emirates',
+    sa: 'Saudi Arabia',
+    my: 'Malaysia',
+    id: 'Indonesia',
+    nl: 'Netherlands',
+    ch: 'Switzerland',
+    se: 'Sweden',
+    no: 'Norway',
+    nz: 'New Zealand'
+  };
+
+  const getCountryName = (code) => {
+    if (!code || code === 'unknown') return 'Unknown Location';
+    return countryNameMap[code.toLowerCase()] || code.toUpperCase();
+  };
+
+  // Generate country distribution for map
+  const getCountryDistributionForMap = () => {
+    const counts = {};
+    users.forEach(u => {
+      let country = u.profile?.country || 'unknown';
+      country = country.trim().toLowerCase();
+      if (country && country !== 'unknown') {
+        counts[country] = (counts[country] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(counts).map(([country, value]) => ({
+      country,
+      value
+    }));
+  };
+
+  // Generate country distribution for list
+  const getCountryDistribution = () => {
+    const counts = {};
+    users.forEach(u => {
+      let country = u.profile?.country || 'unknown';
+      country = country.trim().toLowerCase();
+      counts[country] = (counts[country] || 0) + 1;
+    });
+    
+    return Object.entries(counts)
+      .map(([code, count]) => ({
+        code,
+        name: getCountryName(code),
+        count
+      }))
+      .sort((a, b) => b.count - a.count);
+  };
 
   // Filter global attributes list
   const filteredGlobalAttributes = globalAttributes.filter((attr) => {
@@ -266,7 +366,7 @@ const AdminDashboard = () => {
       {/* Tabs */}
       <Box className="border-b border-slate-200 dark:border-slate-800">
         <Tabs value={tabValue} onChange={(e, val) => setTabValue(val)} color="primary">
-          <Tab label="All Users" className="font-semibold text-sm py-3" />
+          <Tab label="Analytics & Trends" className="font-semibold text-sm py-3" />
           <Tab label="Global Attributes Manager" className="font-semibold text-sm py-3" />
         </Tabs>
       </Box>
@@ -278,144 +378,197 @@ const AdminDashboard = () => {
         </Alert>
       )}
 
-      {/* Tab 1: Users & Usage */}
+      {/* Tab 1: User Analytics & Trends */}
       {tabValue === 0 && (
-        <Box className="space-y-4">
-          {/* User Filtering Tools */}
-          <Card className="shadow-sm border border-slate-100 dark:border-slate-800">
-            <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-              <TextField
-                placeholder="Search by name or email..."
-                variant="outlined"
-                size="small"
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full md:max-w-md bg-white/50 dark:bg-slate-800/30 rounded-xl"
-                slotProps={{
-                  input: {
-                    className: 'rounded-xl',
-                    startAdornment: (
-                      <SearchIcon className="text-slate-400 mr-2" />
-                    )
-                  }
-                }}
-              />
+        <Grid container spacing={3}>
+          {/* Signups Trend Chart */}
+          <Grid item xs={12} md={7}>
+            <Card className="shadow-md bg-white/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
+                  User Registration Trend
+                </Typography>
+                {isLoadingUsers ? (
+                  <Box className="flex justify-center items-center h-[260px]">
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : users.length === 0 ? (
+                  <Box className="flex justify-center items-center h-[260px] text-slate-400 text-sm">
+                    No signup data available.
+                  </Box>
+                ) : (
+                  <Box className="h-[260px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={getRegistrationTrendData()}>
+                        <defs>
+                          <linearGradient id="colorSignups" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                        <XAxis dataKey="date" tickLine={false} tick={{ fontSize: 10 }} />
+                        <YAxis allowDecimals={false} tickLine={false} tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Area
+                          type="monotone"
+                          dataKey="count"
+                          name="Signups"
+                          stroke="#3b82f6"
+                          strokeWidth={2.5}
+                          fillOpacity={1}
+                          fill="url(#colorSignups)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
 
-              <Box className="flex items-center gap-2 w-full md:w-auto">
-                <FormControl size="small" className="min-w-[150px] w-full md:w-auto">
-                  <InputLabel>Age Group</InputLabel>
-                  <Select
-                    value={userAgeFilter}
-                    onChange={(e) => setUserAgeFilter(e.target.value)}
-                    label="Age Group"
-                    className="rounded-xl"
-                  >
-                    <MenuItem value="All">All Age Groups</MenuItem>
-                    <MenuItem value="15–20">15–20</MenuItem>
-                    <MenuItem value="20–25">20–25</MenuItem>
-                    <MenuItem value="25–30">25–30</MenuItem>
-                    <MenuItem value="30–40">30–40</MenuItem>
-                    <MenuItem value="40–50">40–50</MenuItem>
-                    <MenuItem value="50–60">50–60</MenuItem>
-                    <MenuItem value="Above 60">Above 60</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            </CardContent>
-          </Card>
-          
-          {/* Users Table */}
-          <TableContainer
-            component={Paper}
-            className="shadow-md rounded-2xl border border-slate-100 dark:border-slate-800 max-h-[550px] overflow-y-auto scrollbar-thin"
-            ref={tableContainerRef}
-            onScroll={handleScroll}
-          >
-            <Table>
-              <TableHead className="bg-slate-50 dark:bg-slate-900/50">
-                <TableRow>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">User</TableCell>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Role</TableCell>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Age Group</TableCell>
-                  <TableCell className="font-semibold text-slate-600 dark:text-slate-300">Date Joined</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {isLoadingUsers
-                  ? Array.from({ length: userRowsPerPage }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Box className="flex items-center gap-3">
-                            <Skeleton variant="circular" width={38} height={38} />
-                            <Box className="flex flex-col gap-1">
-                              <Skeleton variant="text" width={120} height={14} />
-                              <Skeleton variant="text" width={160} height={12} />
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell><Skeleton variant="rounded" width={60} height={22} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={70} height={14} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={90} height={14} /></TableCell>
-                      </TableRow>
-                    ))
-                  : displayedUsers.length === 0
-                  ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-10 text-slate-400">
-                          No users match the search criteria.
-                        </TableCell>
-                      </TableRow>
-                    )
-                  : displayedUsers.map((userItem) => (
-                      <TableRow
-                        key={userItem.id}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/25 transition-colors cursor-default"
-                      >
-                        <TableCell>
-                          <Box className="flex items-center gap-3">
-                            <Avatar src={userItem.picture} alt={userItem.name} sx={{ width: 38, height: 38 }} />
-                            <Box>
-                              <Typography className="font-semibold text-sm text-slate-800 dark:text-slate-200">{userItem.name || 'Anonymous'}</Typography>
-                              <Typography variant="caption" className="text-slate-400 block">{userItem.email}</Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={userItem.role}
-                            size="small"
-                            color={userItem.role === 'ADMIN' ? 'error' : 'default'}
-                            className="rounded-full text-xs font-semibold"
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm font-medium text-slate-600 dark:text-slate-400">{userItem.profile?.ageGroup || 'N/A'}</TableCell>
-                        <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                          {new Date(userItem.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                }
-                {/* Simulated scroll loading skeleton rows */}
-                {!isLoadingUsers && isScrollLoading && Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={`scroll-skeleton-${i}`}>
-                    <TableCell>
-                      <Box className="flex items-center gap-3">
-                        <Skeleton variant="circular" width={38} height={38} />
-                        <Box className="flex flex-col gap-1">
-                          <Skeleton variant="text" width={120} height={14} />
-                          <Skeleton variant="text" width={160} height={12} />
-                        </Box>
+          {/* Age Group Distribution Chart */}
+          <Grid item xs={12} md={5}>
+            <Card className="shadow-md bg-white/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-semibold mb-4 text-slate-700 dark:text-slate-350">
+                  Age Group Distribution
+                </Typography>
+                {isLoadingUsers ? (
+                  <Box className="flex justify-center items-center h-[260px]">
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : users.length === 0 ? (
+                  <Box className="flex justify-center items-center h-[260px] text-slate-400 text-sm">
+                    No age group data available.
+                  </Box>
+                ) : (
+                  <Box className="h-[260px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={getAgeDistributionData()}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                        <XAxis dataKey="name" tickLine={false} tick={{ fontSize: 10 }} />
+                        <YAxis allowDecimals={false} tickLine={false} tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Bar dataKey="count" name="Users" fill="#f97316" radius={[6, 6, 0, 0]}>
+                          {getAgeDistributionData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#f97316' : '#ea580c'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Location Statistics (World Map & Countries List) */}
+          <Grid item xs={12}>
+            <Card className="shadow-md bg-white/80 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl">
+              <CardContent className="p-6">
+                <Typography variant="h6" className="font-semibold mb-6 text-slate-700 dark:text-slate-350">
+                  Global User Distribution
+                </Typography>
+                
+                {isLoadingUsers ? (
+                  <Box className="flex justify-center items-center h-[350px]">
+                    <CircularProgress size={30} />
+                  </Box>
+                ) : users.length === 0 ? (
+                  <Box className="flex justify-center items-center h-[350px] text-slate-400 text-sm">
+                    No location data available.
+                  </Box>
+                ) : (
+                  <Grid container spacing={4} alignItems="flex-start">
+                    {/* World Map Visualization */}
+                    <Grid item xs={12} md={7} className="w-full">
+                      <Box className="w-full max-w-[550px] bg-slate-50 dark:bg-slate-950/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 location-map-container mx-auto">
+                        <WorldMap
+                          color={primaryColor}
+                          backgroundColor="transparent"
+                          borderColor="#cbd5e1"
+                          title=""
+                          valueSuffix=" users"
+                          size="responsive"
+                          data={getCountryDistributionForMap()}
+                        />
                       </Box>
-                    </TableCell>
-                    <TableCell><Skeleton variant="rounded" width={60} height={22} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={70} height={14} /></TableCell>
-                    <TableCell><Skeleton variant="text" width={90} height={14} /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+                    </Grid>
+
+                    {/* Country List Breakdown */}
+                    <Grid item xs={12} md={5}>
+                      <Typography variant="subtitle2" className="font-semibold text-slate-500 dark:text-slate-400 mb-3">
+                        Country breakdown
+                      </Typography>
+                      <Box className="space-y-4 max-h-[320px] overflow-y-auto pr-2">
+                        {(() => {
+                          const countryList = getCountryDistribution();
+                          const countriesPerPage = 5;
+                          const totalPages = Math.ceil(countryList.length / countriesPerPage);
+                          
+                          // Safeguard page bounds in case data size changes dynamically
+                          const activePage = Math.min(countryPage, Math.max(1, totalPages));
+                          const paginated = countryList.slice((activePage - 1) * countriesPerPage, activePage * countriesPerPage);
+
+                          return (
+                            <>
+                              {paginated.map((item, index) => {
+                                const percentage = Math.round((item.count / users.length) * 100);
+                                return (
+                                  <Box key={index} className="space-y-1">
+                                    <Box className="flex justify-between text-xs font-semibold text-slate-650 dark:text-slate-300">
+                                      <span>{item.name} ({item.code.toUpperCase()})</span>
+                                      <span>{item.count} {item.count === 1 ? 'user' : 'users'} ({percentage}%)</span>
+                                    </Box>
+                                    <Box className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                                      <Box 
+                                        className="h-full rounded-full transition-all duration-500" 
+                                        style={{ width: `${percentage}%`, backgroundColor: primaryColor }} 
+                                      />
+                                    </Box>
+                                  </Box>
+                                );
+                              })}
+
+                              {totalPages > 1 && (
+                                <Box className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                  <Typography variant="caption" className="text-slate-400 font-medium">
+                                    Page {activePage} of {totalPages}
+                                  </Typography>
+                                  <Box className="flex space-x-2">
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      disabled={activePage === 1}
+                                      onClick={() => setCountryPage(p => Math.max(1, p - 1))}
+                                      className="text-xs min-w-0 px-2.5 py-0.5 rounded-lg border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    >
+                                      Prev
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      disabled={activePage === totalPages}
+                                      onClick={() => setCountryPage(p => Math.min(totalPages, p + 1))}
+                                      className="text-xs min-w-0 px-2.5 py-0.5 rounded-lg border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    >
+                                      Next
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </Box>
+                    </Grid>
+                  </Grid>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
 
       {/* Tab 2: Global Attributes Manager */}
@@ -433,17 +586,6 @@ const AdminDashboard = () => {
                     These virtues instantly populate in the dashboard listings of all users.
                   </Typography>
                 </Box>
-
-                {attrError && (
-                  <Alert severity="error" className="rounded-xl">
-                    {attrError}
-                  </Alert>
-                )}
-                {attrSuccess && (
-                  <Alert severity="success" className="rounded-xl">
-                    {attrSuccess}
-                  </Alert>
-                )}
 
                 <form onSubmit={handleCreateGlobalAttribute} className="space-y-4">
                   <TextField
@@ -585,6 +727,32 @@ const AdminDashboard = () => {
       )}
 
 
+      {/* Floating success/error feedback message */}
+      <Snackbar
+        open={Boolean(toastMsg)}
+        autoHideDuration={4000}
+        onClose={() => setToastMsg('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setToastMsg('')} 
+          severity={toastSeverity} 
+          variant="filled"
+          sx={{ 
+            width: '100%', 
+            borderRadius: '16px', 
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            bgcolor: toastSeverity === 'error' ? 'error.main' : 'success.main',
+            color: '#ffffff',
+            fontWeight: 600,
+            '& .MuiAlert-icon': {
+              color: '#ffffff'
+            }
+          }}
+        >
+          {toastMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { themePalettes } from '../theme/themeConfig';
+import { aggregateChartData } from '../utils/chartHelpers';
+
 import {
   Box,
   Typography,
@@ -59,6 +61,11 @@ import { motion, useReducedMotion } from 'framer-motion';
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
   visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.35, delay: i * 0.08, ease: 'easeOut' } })
+};
+
+const stripHtml = (html) => {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, '').trim();
 };
 
 const AssessmentHistory = () => {
@@ -202,15 +209,7 @@ const AssessmentHistory = () => {
 
   const filteredHistory = getFilteredHistory();
 
-  // 1. Line Chart Data: Alignment score trend over time (sorted chronologically)
-  const lineChartData = [...filteredHistory]
-    .reverse() // Make it chronological (oldest to newest)
-    .map(item => ({
-      date: dayjs(item.assessmentDate).format('MMM DD'),
-      fullDate: dayjs(item.assessmentDate),
-      score: item.alignmentScore,
-      character: item.character.name.split(' (')[0] // shorten name
-    }));
+  const lineChartData = aggregateChartData(filteredHistory);
 
   // 2. Radar Chart Data: Holistic mapping of character strengths (average per trait)
   const traitAverages = {};
@@ -702,7 +701,7 @@ const AssessmentHistory = () => {
                         </TableCell>
                         <TableCell className="text-xs max-w-xs truncate">{item.effortLevel}</TableCell>
                         <TableCell className="text-xs text-slate-500 dark:text-slate-400 italic max-w-md truncate">
-                          {item.personalNote || 'No notes added'}
+                          {stripHtml(item.personalNote) || 'No notes added'}
                         </TableCell>
                       </TableRow>
                     ))}

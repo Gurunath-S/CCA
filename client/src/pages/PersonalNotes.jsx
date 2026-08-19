@@ -37,6 +37,30 @@ import {
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+import DOMPurify from 'dompurify';
+
+const quillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote'],
+    ['clean']
+  ]
+};
+
+const quillFormats = [
+  'bold', 'italic', 'underline', 'strike',
+  'list', 'bullet',
+  'blockquote'
+];
+
+const isContentEmpty = (htmlContent) => {
+  if (!htmlContent) return true;
+  const stripped = htmlContent.replace(/<[^>]*>/g, '').trim();
+  return stripped === '';
+};
 
 const PersonalNotes = () => {
   const { characters, fetchCharacters, notes, fetchNotes, upsertNote, deleteNote, isLoading } = useCharacterStore();
@@ -81,7 +105,7 @@ const PersonalNotes = () => {
 
   const handleAddNote = async (e) => {
     e.preventDefault();
-    if (!newNoteContent.trim() || !selectedCharId) return;
+    if (isContentEmpty(newNoteContent) || !selectedCharId) return;
 
     try {
       await upsertNote({
@@ -95,7 +119,7 @@ const PersonalNotes = () => {
   };
 
   const handleSaveEdit = async (noteId) => {
-    if (!editingContent.trim()) return;
+    if (isContentEmpty(editingContent)) return;
 
     try {
       await upsertNote({
@@ -231,31 +255,31 @@ const PersonalNotes = () => {
             {/* Quick Add Note Box */}
             <Card className="flex-shrink-0">
               <CardContent className="p-4">
-                <Typography variant="subtitle2" className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                <Typography variant="subtitle2" className="font-semibold text-slate-700 dark:text-slate-350 mb-2">
                   New reflection for: <span className="text-orange-550 font-bold">{getSelectedCharName()}</span>
                 </Typography>
-                <form onSubmit={handleAddNote} className="flex gap-2">
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    placeholder="Capture a thought, experience, or note to yourself..."
-                    value={newNoteContent}
-                    onChange={(e) => setNewNoteContent(e.target.value)}
-                    className="bg-white dark:bg-slate-850 rounded-xl"
-                    slotProps={{
-                      input: { className: 'rounded-xl' }
-                    }}
-                  />
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={!newNoteContent.trim()}
-                    startIcon={<NoteIcon />}
-                    className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4"
-                  >
-                    Add
-                  </Button>
+                <form onSubmit={handleAddNote} className="space-y-3">
+                  <Box className="bg-white dark:bg-slate-850 rounded-2xl overflow-hidden">
+                    <ReactQuill
+                      theme="snow"
+                      value={newNoteContent}
+                      onChange={setNewNoteContent}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      placeholder="Capture a thought, experience, or note to yourself..."
+                    />
+                  </Box>
+                  <Box className="flex justify-end">
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={isContentEmpty(newNoteContent)}
+                      startIcon={<NoteIcon />}
+                      className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-2 text-sm"
+                    >
+                      Add Reflection
+                    </Button>
+                  </Box>
                 </form>
               </CardContent>
             </Card>
@@ -330,47 +354,52 @@ const PersonalNotes = () => {
                               className="p-4 border border-slate-150 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 rounded-2xl flex flex-col justify-between gap-3 hover:shadow-sm transition-shadow"
                             >
                               {isEditing ? (
-                                <Box className="space-y-2">
-                                  <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={2}
-                                    value={editingContent}
-                                    onChange={(e) => setEditingContent(e.target.value)}
-                                    className="bg-white dark:bg-slate-800 rounded-xl"
-                                    slotProps={{
-                                      input: { className: 'rounded-xl' }
-                                    }}
-                                  />
+                                <Box className="space-y-3">
+                                  <Box className="bg-white dark:bg-slate-850 rounded-2xl overflow-hidden">
+                                    <ReactQuill
+                                      theme="snow"
+                                      value={editingContent}
+                                      onChange={setEditingContent}
+                                      modules={quillModules}
+                                      formats={quillFormats}
+                                    />
+                                  </Box>
                                   <Box className="flex gap-2 justify-end">
-                                    <IconButton
+                                    <Button
                                       size="small"
+                                      variant="contained"
                                       color="primary"
-                                      aria-label="Save note"
+                                      className="rounded-xl px-3 py-1.5 text-xs"
                                       onClick={() => handleSaveEdit(note.id)}
-                                      disabled={!editingContent.trim()}
+                                      disabled={isContentEmpty(editingContent)}
+                                      startIcon={<SaveIcon style={{ fontSize: 14 }} />}
                                     >
-                                      <SaveIcon />
-                                    </IconButton>
-                                    <IconButton
+                                      Save
+                                    </Button>
+                                    <Button
                                       size="small"
+                                      variant="outlined"
                                       color="inherit"
-                                      aria-label="Cancel editing"
+                                      className="rounded-xl px-3 py-1.5 text-xs"
                                       onClick={() => setEditingNoteId(null)}
+                                      startIcon={<CancelIcon style={{ fontSize: 14 }} />}
                                     >
-                                      <CancelIcon />
-                                    </IconButton>
+                                      Cancel
+                                    </Button>
                                   </Box>
                                 </Box>
                               ) : (
                                 <Box className="flex justify-between items-start gap-4">
-                                  <Box className="space-y-1">
+                                  <Box className="space-y-1 overflow-hidden w-full">
                                     <Typography variant="caption" className="text-slate-400 block font-medium">
                                       {dayjs(note.createdAt).format('MMMM DD, YYYY • h:mm A')}
                                     </Typography>
-                                    <Typography variant="body2" className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed text-sm">
-                                      {note.content}
-                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      className="text-slate-700 dark:text-slate-350 leading-relaxed text-sm ql-editor"
+                                      style={{ padding: 0 }}
+                                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(note.content) }}
+                                    />
                                   </Box>
 
                                   <Box className="flex flex-shrink-0">

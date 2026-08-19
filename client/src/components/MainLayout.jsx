@@ -55,6 +55,16 @@ const MainLayout = ({ children }) => {
   
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  React.useEffect(() => {
+    if (isMobile && mobileOpen) {
+      const originalStyle = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [mobileOpen, isMobile]);
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -97,10 +107,17 @@ const MainLayout = ({ children }) => {
         {/* User Card */}
         <Box sx={{ px: 2.5, py: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Avatar 
-            src={user?.picture} 
+            src={user?.picture || '/avatars/avatar_1.png'} 
             alt={user?.name}
+            imgProps={{
+              onError: (e) => {
+                e.target.src = '/avatars/avatar_1.png';
+              }
+            }}
             sx={{ width: 44, height: 44, border: '2px solid rgba(251, 146, 60, 0.6)' }}
-          />
+          >
+            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+          </Avatar>
           <Box sx={{ overflow: 'hidden' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
               {user?.name || 'Guest User'}
@@ -193,6 +210,7 @@ const MainLayout = ({ children }) => {
       {/* Sidebar for Desktop */}
       {!isMobile && (
         <Box 
+          id="tour-sidebar"
           component="nav" 
           sx={{ width: drawerWidth, flexShrink: 0 }}
           className="h-screen sticky top-0 border-r border-themeBorder bg-themeSidebar"
@@ -216,6 +234,7 @@ const MainLayout = ({ children }) => {
           >
             <Toolbar className="flex justify-between px-4">
               <IconButton
+                id="tour-mobile-menu"
                 color="inherit"
                 edge="start"
                 onClick={handleDrawerToggle}
@@ -228,12 +247,19 @@ const MainLayout = ({ children }) => {
                 Character Coach
               </Typography>
               <Avatar 
-                src={user?.picture} 
+                src={user?.picture || '/avatars/avatar_1.png'} 
                 alt={user?.name}
+                imgProps={{
+                  onError: (e) => {
+                    e.target.src = '/avatars/avatar_1.png';
+                  }
+                }}
                 sx={{ width: 32, height: 32 }}
                 onClick={() => navigate('/settings')}
                 className="cursor-pointer"
-              />
+              >
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </Avatar>
             </Toolbar>
           </AppBar>
           <Drawer

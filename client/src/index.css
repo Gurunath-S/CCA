@@ -158,3 +158,156 @@ body {
               border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               color 0.3s ease;
 }
+
+/* Custom Uiverse Shine Button */
+.uiverse-btn {
+  position: relative;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+  padding-block: 0.5rem;
+  padding-inline: 1.25rem;
+  background-color: rgb(0 107 179);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffffff;
+  gap: 10px;
+  font-weight: bold;
+  border: 3px solid #ffffff4d;
+  outline: none;
+  overflow: hidden;
+  font-size: 15px;
+  width: 100%;
+  height: 100%;
+}
+
+.uiverse-btn .icon {
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s ease-in-out;
+}
+
+.group:hover .uiverse-btn {
+  transform: scale(1.05);
+  border-color: #ffffff99;
+}
+
+.group:hover .uiverse-btn .icon {
+  transform: translate(4px);
+}
+
+.group:hover .uiverse-btn::before {
+  animation: shine 1.5s ease-out infinite;
+}
+
+.uiverse-btn::before {
+  content: "";
+  position: absolute;
+  width: 100px;
+  height: 100%;
+  background-image: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0) 70%
+  );
+  top: 0;
+  left: -100px;
+  opacity: 0.6;
+}
+
+@keyframes shine {
+  0% {
+    left: -100px;
+  }
+  60% {
+    left: 100%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+/* Fix react-svg-worldmap visibility and contrast */
+.location-map-container svg g path {
+  fill: #cbd5e1;
+  stroke: #000000 !important;
+  stroke-width: 1px !important;
+  transition: fill 0.2s ease;
+}
+.dark .location-map-container svg g path {
+  fill: #334155;
+  stroke: #000000 !important;
+  stroke-width: 1.2px !important;
+}
+.location-map-container svg g path:hover {
+  opacity: 0.8;
+}
+
+/* Hide custom react-svg-worldmap tooltip overlay elements (rect, polygon, text) */
+.location-map-container svg rect,
+.location-map-container svg polygon,
+.location-map-container svg text {
+  display: none !important;
+}
+
+/* Quill Rich Editor Custom Styling & Dark Mode Compatibility */
+.quill {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-paper, #ffffff);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+}
+
+.quill .ql-toolbar.ql-snow {
+  border: none;
+  border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+  background-color: rgba(0, 0, 0, 0.02);
+  padding: 8px 12px;
+}
+
+.quill .ql-container.ql-snow {
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.quill .ql-editor {
+  min-height: 100px;
+  max-height: 300px;
+  color: var(--color-text-primary, #0f172a);
+}
+
+.quill .ql-editor.ql-blank::before {
+  color: #94a3b8; /* Slate 400 */
+  font-style: normal;
+  left: 15px;
+}
+
+/* Dark theme specific overrides for Quill toolbars and dropdowns */
+.theme-midnight-focus .quill .ql-toolbar.ql-snow {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-stroke {
+  stroke: #cbd5e1;
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-fill {
+  fill: #cbd5e1;
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-picker {
+  color: #cbd5e1;
+}
+
+.theme-midnight-focus .quill .ql-snow .ql-picker-options {
+  background-color: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+

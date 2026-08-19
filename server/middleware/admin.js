@@ -1,6 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const { decrypt } = require('../utils/crypto');
+
 module.exports = async (req, res, next) => {
   try {
     if (!req.user || !req.user.id) {
@@ -16,7 +18,7 @@ module.exports = async (req, res, next) => {
     }
 
     req.user.role = user.role;
-    req.user.email = user.email;
+    req.user.email = decrypt(user.email);
     next();
   } catch (err) {
     console.error('Admin middleware error:', err);

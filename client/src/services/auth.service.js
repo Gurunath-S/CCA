@@ -27,5 +27,11 @@ export const authService = {
   refreshToken: async (refreshToken) => {
     const response = await api.post('/auth/refresh', { refreshToken });
     return response.data;
+  },
+
+  acknowledgePolicy: async (token) => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await api.post('/auth/acknowledge-policy', {}, { headers });
+    return response.data;
   }
 };

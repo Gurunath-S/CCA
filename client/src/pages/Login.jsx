@@ -5,10 +5,14 @@ import {
   Box,
   Typography,
   Alert,
-  CircularProgress
+  CircularProgress,
+  IconButton
 } from '@mui/material';
-import { Spa as SpaIcon } from '@mui/icons-material';
+import { Spa as SpaIcon, InfoOutlined as InfoIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+
+import PrivacyPolicyDialog from '../components/PrivacyPolicyDialog';
+import AppInfoDialog from '../components/AppInfoDialog';
 
 const Login = () => {
   const { setRedirectSession, isLoading, error } = useAuthStore();
@@ -17,6 +21,8 @@ const Login = () => {
   const from = location.state?.from?.pathname || '/';
 
   const [loginError, setLoginError] = useState(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   // Handle redirect mode callback tokens from URL query params
   useEffect(() => {
@@ -28,11 +34,9 @@ const Login = () => {
 
     if (redirectError) {
       setLoginError(decodeURIComponent(redirectError));
-      // Clean query parameters from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (accessToken && refreshToken) {
-      // Clean query parameters immediately for security
-      window.history.replaceState({}, document.title, window.location.pathname);
+      navigate('/login', { replace: true });
+    } else if (accessToken || isNewUser !== null) {
+      navigate('/login', { replace: true });
 
       const processRedirectLogin = async () => {
         try {
@@ -54,7 +58,8 @@ const Login = () => {
 
   useEffect(() => {
     const initializeGoogleSignIn = () => {
-      if (window.google) {
+      const btnContainer = document.getElementById("google-signin-button");
+      if (window.google && btnContainer) {
         const apiBaseUrl = import.meta.env.VITE_API_URL 
           ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
           : 'http://localhost:5000';
@@ -66,7 +71,7 @@ const Login = () => {
         });
         
         window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-button"),
+          btnContainer,
           { 
             theme: "outline", 
             size: "large", 
@@ -75,6 +80,8 @@ const Login = () => {
             shape: "pill" 
           }
         );
+      } else if (window.google && !btnContainer) {
+        setTimeout(initializeGoogleSignIn, 100);
       }
     };
 
@@ -117,12 +124,12 @@ const Login = () => {
           transform: 'translate3d(0, 0, 0)'
         }}
       >
-        <source src="/bg_video_fast.mp4" type="video/mp4" />
+        <source src="/background_light_waves_720p.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
 
       {/* Subtle Overlay to ensure high-contrast readability without blurring the video */}
-      <Box className="absolute inset-0 bg-slate-950/40 z-0" />
+      <Box className="absolute inset-0 bg-slate-950/25 z-0" />
 
       {/* Central High-Transparency Glassmorphic Login Card */}
       <motion.div
@@ -132,31 +139,41 @@ const Login = () => {
         className="relative z-10 max-w-lg w-full p-8 sm:p-10 rounded-[32px] backdrop-blur-xl bg-slate-950/70 dark:bg-slate-950/80 border border-white/10 dark:border-white/10 shadow-2xl flex flex-col items-center text-center space-y-6"
       >
         {/* App Logo */}
-        <Box className="flex flex-col items-center space-y-2">
+        <Box className="flex flex-col items-center space-y-2 w-full relative">
           <SpaIcon className="text-5xl drop-shadow-md animate-pulse" style={{ color: '#f97316' }} />
-          <Typography 
-            variant="h4" 
-            className="font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 drop-shadow-lg"
-            style={{ fontFamily: '"Playfair Display", serif' }}
-          >
-            Character Coach
-          </Typography>
+          <Box className="flex items-center justify-center gap-1.5 w-full relative">
+            <Typography 
+              variant="h4" 
+              className="font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 drop-shadow-lg pl-6"
+              style={{ fontFamily: '"Playfair Display", serif' }}
+            >
+              Character Coach
+            </Typography>
+            <IconButton 
+              size="small"
+              onClick={() => setInfoOpen(true)}
+              className="text-slate-400 hover:text-orange-400 transition-colors"
+              title="Learn about Character Coach"
+            >
+              <InfoIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Box>
 
         {/* Serene Tagline */}
-        <Box className="space-y-2">
+        <Box className="space-y-1">
           <Typography 
             variant="h6" 
             className="font-serif italic font-semibold text-amber-200 leading-relaxed drop-shadow-md max-w-xs mx-auto text-base sm:text-lg"
             style={{ fontFamily: '"Playfair Display", serif' }}
           >
-            “To be and to make, that is the whole secret.”
+            “You have to grow from the inside out.”
           </Typography>
           <Typography 
             variant="body2" 
-            className="text-slate-200/90 text-sm max-w-xs mx-auto leading-relaxed font-light tracking-wide drop-shadow-sm"
+            className="text-slate-300 text-xs max-w-xs mx-auto leading-relaxed font-light tracking-wide"
           >
-            Evaluate, understand, and refine your core character attributes daily.
+            A dedicated platform to evaluate, understand, and refine your core character attributes over time.
           </Typography>
         </Box>
 
@@ -177,9 +194,69 @@ const Login = () => {
           {isLoading ? (
             <CircularProgress size={30} style={{ color: '#f97316' }} />
           ) : (
-            <div id="google-signin-button" className="shadow-lg rounded-full overflow-hidden transition-transform hover:scale-[1.02]" />
+            <>
+              {/* Google Button Wrapper with Overlay */}
+              <div 
+                className="group relative" 
+                style={{ 
+                  width: '280px', 
+                  height: '46px',
+                }}
+              >
+                {/* Custom Styled Animated Google Button */}
+                <button 
+                  className="uiverse-btn absolute top-0 left-0 z-1 pointer-events-none select-none"
+                  type="button"
+                >
+                  Sign In with Google
+                  <svg fill="currentColor" viewBox="0 0 24 24" className="icon">
+                    <path
+                      clipRule="evenodd"
+                      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z"
+                      fillRule="evenodd"
+                    />
+                  </svg>
+                </button>
+
+                {/* The actual underlying transparent Google Sign-In button container */}
+                <div 
+                  id="google-signin-button" 
+                  style={{ 
+                    position: 'absolute', 
+                    top: 0, 
+                    left: 0, 
+                    width: '100%', 
+                    height: '100%', 
+                    opacity: 0, 
+                    zIndex: 10,
+                    cursor: 'pointer'
+                  }} 
+                />
+              </div>
+
+              {/* Auxiliary Actions */}
+              <Box className="flex flex-col items-center mt-6 px-4">
+                <Typography 
+                  variant="caption" 
+                  className="text-slate-400 text-[11px] text-center max-w-[280px] leading-relaxed select-none"
+                >
+                  By signing in, you agree to our{' '}
+                  <button
+                    type="button"
+                    onClick={() => setPrivacyOpen(true)}
+                    className="text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2 bg-transparent border-0 cursor-pointer p-0 inline transition-colors"
+                  >
+                    Privacy Policy
+                  </button>
+                  . We do not collect mandatory personal information.
+                </Typography>
+              </Box>
+            </>
           )}
         </Box>
+
+        <PrivacyPolicyDialog open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+        <AppInfoDialog open={infoOpen} onClose={() => setInfoOpen(false)} />
 
         <Box className="w-full mt-6 pt-12 border-t border-white/10 dark:border-white/15">
           <Box className="flex items-center text-left space-x-4 bg-slate-900/60 p-4 rounded-2xl border border-white/5 shadow-inner">

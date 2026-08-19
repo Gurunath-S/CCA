@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { encrypt, hashEmail } = require('../utils/crypto');
 
 const defaultAttributes = [
   // Niyama
@@ -74,16 +75,18 @@ async function main() {
   // Seed data for gururider35@gmail.com
   const testEmail = 'gururider35@gmail.com';
   console.log(`Seeding user data for ${testEmail}...`);
+  const testEmailHash = hashEmail(testEmail);
   let user = await prisma.user.findUnique({
-    where: { email: testEmail }
+    where: { emailHash: testEmailHash }
   });
 
   if (!user) {
     user = await prisma.user.create({
       data: {
-        email: testEmail,
+        email: encrypt(testEmail),
+        emailHash: testEmailHash,
         name: 'Guru Rider',
-        picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
+        picture: encrypt('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'),
         role: 'ADMIN',
         profile: {
           create: {
@@ -129,78 +132,100 @@ async function main() {
       where: { userId: user.id }
     });
 
-    const mockAssessments = [
-      {
-        attrName: 'Cleanliness (Saucha - Niyama)',
-        alignmentScore: 4,
-        othersRecognize: 'Yes - Regularly',
-        consciousEffort: true,
-        effortLevel: 'I am able to practice this without lot of effort',
-        practiceFrequency: 'More than 5 times',
-        personalNote: 'Kept my working desk and room completely organized this week. Felt very peaceful.',
-        daysAgo: 4
-      },
-      {
-        attrName: 'Cleanliness (Saucha - Niyama)',
-        alignmentScore: 3,
-        othersRecognize: 'Yes - Sometimes',
-        consciousEffort: true,
-        effortLevel: 'I catch myself for not following this and make effort to correct',
-        practiceFrequency: '1 - 5 times',
-        personalNote: 'Felt a bit lazy mid-week but cleaned up by Friday.',
-        daysAgo: 10
-      },
-      {
-        attrName: 'Courage',
-        alignmentScore: 5,
-        othersRecognize: 'Yes - Regularly',
-        consciousEffort: true,
-        effortLevel: 'I am able to practice this without lot of effort',
-        practiceFrequency: '1 - 5 times',
-        personalNote: 'Spoke up in the meeting and presented my ideas clearly. Others appreciated my clarity.',
-        daysAgo: 2
-      },
-      {
-        attrName: 'Truthfulness (Satya - Yama)',
-        alignmentScore: 4,
-        othersRecognize: 'Yes - Sometimes',
-        consciousEffort: true,
-        effortLevel: 'I catch myself for not following this and make effort to correct',
-        practiceFrequency: 'More than 5 times',
-        personalNote: 'Was honest about a project delay instead of giving an excuse.',
-        daysAgo: 5
-      },
-      {
-        attrName: 'Patience',
-        alignmentScore: 2,
-        othersRecognize: 'No - Not at all',
-        consciousEffort: false,
-        effortLevel: 'I am aware of this trait in my action but hard to practice',
-        practiceFrequency: 'Didn’t get to practice this',
-        personalNote: 'Lost temper in traffic on Monday. Need to consciously breathe and stay calm.',
-        daysAgo: 7
-      },
-      {
-        attrName: 'Sense of Discipline (Tapas - Niyama)',
-        alignmentScore: 4,
-        othersRecognize: 'Yes - Sometimes',
-        consciousEffort: true,
-        effortLevel: 'I catch myself for not following this and make effort to correct',
-        practiceFrequency: '1 - 5 times',
-        personalNote: 'Stuck to my morning routine for 4 out of 5 days.',
-        daysAgo: 3
-      },
-      {
-        attrName: 'Determination',
-        alignmentScore: 5,
-        othersRecognize: 'Yes - Regularly',
-        consciousEffort: true,
-        effortLevel: 'I am able to practice this without lot of effort',
-        practiceFrequency: 'More than 5 times',
-        personalNote: 'Completed the task on time despite the complex issues.',
-        daysAgo: 1
-      }
+    const mockAssessments = [];
+    const recognitionOptions = [
+      'Yes - Regularly',
+      'Yes - Sometimes',
+      'No - Not at all',
+      'Others remind me for not having this trait'
     ];
+    const effortLevelOptions = [
+      'I am aware of this trait in my action but hard to practice',
+      'I catch myself for not following this and make effort to correct',
+      'I am able to practice this without lot of effort'
+    ];
+    const frequencyOptions = [
+      'Didn\'t get to practice this',
+      '1 - 5 times',
+      'More than 5 times'
+    ];
+
+    const totalDays = 1825; // 5 years of daily data
+
+    // Thoughtful reflection notes per trait category
+    const reflectionPhrases = {
+      Niyama: [
+        'Maintained discipline and felt inner clarity today.',
+        'Struggled with consistency but made conscious effort.',
+        'Practiced self-study and found new insights.',
+        'Contentment was my anchor during a stressful day.',
+        'Surrender to the moment helped me stay at peace.'
+      ],
+      Yama: [
+        'Chose kindness over reaction — a small win.',
+        'Non-greed practice: resisted impulse to accumulate.',
+        'Truthfulness required courage today. Worth it.',
+        'Practiced restraint in speech and action.',
+        'Non-violence in thought is harder than in action — noticing this more.'
+      ],
+      General: [
+        'Felt more confident in expressing my perspective.',
+        'Relied on inner resources instead of seeking external validation.',
+        'Diligence brought results today — steady effort pays off.',
+        'Patience tested and held — growth visible.',
+        'Took initiative in a situation where I previously hesitated.'
+      ]
+    };
+
+    for (let i = 1; i <= totalDays; i++) {
+      const attr = dbAttributes[i % dbAttributes.length];
+
+      // Natural sine-wave score variation (1–5) simulating gradual growth with dips
+      const progress = i / totalDays; // 0 → 1 over 5 years
+      const wave = Math.sin((i / 30) * Math.PI); // monthly oscillation
+      const baseScore = 2 + progress * 2 + wave * 0.8; // trends from ~2 to ~4 with waves
+      const alignmentScore = Math.min(5, Math.max(1, Math.round(baseScore)));
+
+      // Effort improves over time
+      const effortIdx = progress < 0.33
+        ? 0
+        : progress < 0.66
+          ? (i % 2 === 0 ? 0 : 1)
+          : (i % 3 === 0 ? 1 : 2);
+
+      // Frequency improves with time
+      const freqIdx = progress < 0.4
+        ? (i % 3 === 0 ? 0 : 1)
+        : progress < 0.75
+          ? (i % 4 === 0 ? 0 : i % 2 === 0 ? 1 : 2)
+          : (i % 5 === 0 ? 0 : 2);
+
+      // Recognition improves over years
+      const recogIdx = progress < 0.25 ? 2
+        : progress < 0.5 ? (i % 2 === 0 ? 2 : 1)
+        : progress < 0.75 ? (i % 3 === 0 ? 1 : 0)
+        : (i % 6 === 0 ? 1 : 0);
+
+      // Conscious effort nearly always true in later years
+      const consciousEffort = progress > 0.6 ? true : (i % 3 !== 0);
+
+      // Select a meaningful reflection note
+      const categoryNotes = reflectionPhrases[attr.category] || reflectionPhrases.General;
+      const noteText = categoryNotes[i % categoryNotes.length];
+      const personalNote = `Day ${i} — ${attr.name}: ${noteText}`;
+
+      mockAssessments.push({
+        attrName: attr.name,
+        alignmentScore,
+        othersRecognize: recognitionOptions[recogIdx],
+        consciousEffort,
+        effortLevel: effortLevelOptions[effortIdx],
+        practiceFrequency: frequencyOptions[freqIdx],
+        personalNote,
+        daysAgo: i
+      });
+    }
+
 
     for (const mock of mockAssessments) {
       const attribute = dbAttributes.find(a => a.name === mock.attrName);
@@ -241,7 +266,76 @@ async function main() {
     }
   }
 
-  console.log('Database seeded successfully!');
+  // Seed multiple mock users with location data for analytics testing
+  console.log('Seeding mock users with geographic data...');
+  const mockUsers = [
+    { email: 'sarah.jones@example.com', name: 'Sarah Jones', country: 'us', city: 'New York' },
+    { email: 'raj.patel@example.com', name: 'Raj Patel', country: 'in', city: 'Mumbai' },
+    { email: 'amit.sharma@example.com', name: 'Amit Sharma', country: 'in', city: 'Delhi' },
+    { email: 'john.smith@example.com', name: 'John Smith', country: 'us', city: 'San Francisco' },
+    { email: 'david.miller@example.com', name: 'David Miller', country: 'gb', city: 'London' },
+    { email: 'emma.watson@example.com', name: 'Emma Watson', country: 'gb', city: 'Edinburgh' },
+    { email: 'yuki.tanaka@example.com', name: 'Yuki Tanaka', country: 'jp', city: 'Tokyo' },
+    { email: 'sophie.dubois@example.com', name: 'Sophie Dubois', country: 'fr', city: 'Paris' },
+    { email: 'hans.schmidt@example.com', name: 'Hans Schmidt', country: 'de', city: 'Berlin' },
+    { email: 'alex.gomez@example.com', name: 'Alex Gomez', country: 'mx', city: 'Mexico City' },
+    { email: 'li.wei@example.com', name: 'Li Wei', country: 'cn', city: 'Beijing' },
+    { email: 'lucas.silva@example.com', name: 'Lucas Silva', country: 'br', city: 'Sao Paulo' }
+  ];
+
+  for (const mock of mockUsers) {
+    const mockEmailHash = hashEmail(mock.email);
+    const existingUser = await prisma.user.findUnique({
+      where: { emailHash: mockEmailHash }
+    });
+
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          email: encrypt(mock.email),
+          emailHash: mockEmailHash,
+          name: mock.name,
+          role: 'USER',
+          profile: {
+            create: {
+              theme: 'Serenity',
+              ageGroup: '20–25',
+              country: mock.country,
+              city: mock.city
+            }
+          }
+        }
+      });
+    } else {
+      await prisma.userProfile.upsert({
+        where: { userId: existingUser.id },
+        update: {
+          country: mock.country,
+          city: mock.city
+        },
+        create: {
+          userId: existingUser.id,
+          country: mock.country,
+          city: mock.city,
+          theme: 'Serenity',
+          ageGroup: '20–25'
+        }
+      });
+    }
+  }
+
+  // Standardize existing user country names to ISO codes
+  const profiles = await prisma.userProfile.findMany();
+  for (const prof of profiles) {
+    if (prof.country && prof.country.toLowerCase() === 'india') {
+      await prisma.userProfile.update({
+        where: { id: prof.id },
+        data: { country: 'in' }
+      });
+    }
+  }
+
+  console.log('Database seeded successfully with locations!');
 }
 
 main()

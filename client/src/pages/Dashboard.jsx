@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCharacterStore } from '../store/useCharacterStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { themePalettes } from '../theme/themeConfig';
+import { aggregateChartData } from '../utils/chartHelpers';
+
 import {
   Box,
   Typography,
@@ -34,7 +36,8 @@ import {
   Timeline as ChartIcon,
   ListAlt as ListIcon,
   PlayArrow as StartIcon,
-  TrendingUp as UpIcon
+  TrendingUp as UpIcon,
+  HelpOutline as HelpIcon
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -48,6 +51,8 @@ import {
 import dayjs from 'dayjs';
 import { FooterNote } from '../components/common/FooterNote';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { DEFAULT_TRAITS } from '../utils/defaultTraits';
+import { HelpTour } from '../components/common/HelpTour';
 
 // Reusable animation variants — shorter duration for low-end device friendliness
 const fadeUp = {
@@ -76,6 +81,7 @@ const Dashboard = () => {
   const [dashTimeFilter, setDashTimeFilter] = useState('7days');
   const [dashStartDate, setDashStartDate] = useState('');
   const [dashEndDate, setDashEndDate] = useState('');
+  const [tourOpen, setTourOpen] = useState(false);
 
   const userTheme = user?.profile?.theme || 'Classic';
   const colors = themePalettes[userTheme]?.chartColors || themePalettes.Classic.chartColors;
@@ -84,6 +90,17 @@ const Dashboard = () => {
     fetchCharacters();
     fetchHistory();
   }, [fetchCharacters, fetchHistory]);
+
+  useEffect(() => {
+    if (user && user.profile && user.policyAcknowledged && !isLoading) {
+      const key = `helpTourShown_${user.id}`;
+      const tourShown = localStorage.getItem(key);
+      if (!tourShown) {
+        setTourOpen(true);
+        localStorage.setItem(key, 'true');
+      }
+    }
+  }, [user, isLoading]);
 
   // Loading indicator on first load
   if (isLoading && history.length === 0 && characters.length === 0) {
@@ -176,60 +193,119 @@ const Dashboard = () => {
   const calculateStreak = () => {
     if (history.length === 0) return { current: 0, best: 0 };
     
-    // Get sorted unique dates (YYYY-MM-DD) in ascending order (oldest first)
-    const dates = history
-      .map(item => dayjs(item.assessmentDate).format('YYYY-MM-DD'))
-      .filter((value, index, self) => self.indexOf(value) === index)
-      .sort((a, b) => new Date(a) - new Date(b));
+    const streakType = user?.profile?.streakType || 'Daily';
+    const isWeekly = streakType === 'Weekly';
 
-    let best = 0;
-    let tempStreak = 0;
-    let prevDate = null;
+    if (isWeekly) {
+      // Group dates by week (start of week) to check consecutive weeks
+      const weeks = history
+        .map(item => dayjs(item.assessmentDate).startOf('week').format('YYYY-MM-DD'))
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .sort((a, b) => new Date(a) - new Date(b));
 
-    for (let i = 0; i < dates.length; i++) {
-      const currentDate = dayjs(dates[i]);
-      if (prevDate === null) {
-        tempStreak = 1;
-      } else {
-        const diff = currentDate.diff(prevDate, 'day');
-        if (diff === 1) {
-          tempStreak++;
-        } else if (diff > 1) {
-          if (tempStreak > best) {
-            best = tempStreak;
-          }
-          tempStreak = 1; // reset streak
-        }
-      }
-      prevDate = currentDate;
-    }
-    if (tempStreak > best) {
-      best = tempStreak;
-    }
+      let best = 0;
+      let tempStreak = 0;
+      let prevWeek = null;
 
-    // Calculate current active streak (must end today or yesterday)
-    let current = 0;
-    const descDates = [...dates].sort((a, b) => new Date(b) - new Date(a)); // today first
-    const today = dayjs().format('YYYY-MM-DD');
-    const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
-
-    if (descDates[0] === today || descDates[0] === yesterday) {
-      let expectedDate = dayjs(descDates[0]);
-      for (let i = 0; i < descDates.length; i++) {
-        const currentDate = dayjs(descDates[i]);
-        const diff = expectedDate.diff(currentDate, 'day');
-        if (diff === 0) {
-          current++;
-          expectedDate = expectedDate.subtract(1, 'day');
+      for (let i = 0; i < weeks.length; i++) {
+        const currentWeek = dayjs(weeks[i]);
+        if (prevWeek === null) {
+          tempStreak = 1;
         } else {
-          break;
+          const diff = currentWeek.diff(prevWeek, 'week');
+          if (diff === 1) {
+            tempStreak++;
+          } else if (diff > 1) {
+            if (tempStreak > best) {
+              best = tempStreak;
+            }
+            tempStreak = 1; // reset streak
+          }
+        }
+        prevWeek = currentWeek;
+      }
+      if (tempStreak > best) {
+        best = tempStreak;
+      }
+
+      // Calculate current active streak (must end this week or last week)
+      let current = 0;
+      const descWeeks = [...weeks].sort((a, b) => new Date(b) - new Date(a));
+      const thisWeek = dayjs().startOf('week').format('YYYY-MM-DD');
+      const lastWeek = dayjs().subtract(1, 'week').startOf('week').format('YYYY-MM-DD');
+
+      if (descWeeks[0] === thisWeek || descWeeks[0] === lastWeek) {
+        let expectedWeek = dayjs(descWeeks[0]);
+        for (let i = 0; i < descWeeks.length; i++) {
+          const currentWeek = dayjs(descWeeks[i]);
+          const diff = expectedWeek.diff(currentWeek, 'week');
+          if (diff === 0) {
+            current++;
+            expectedWeek = expectedWeek.subtract(1, 'week');
+          } else {
+            break;
+          }
         }
       }
-    }
 
-    return { current, best: Math.max(best, current) };
+      return { current, best: Math.max(best, current) };
+    } else {
+      // Get sorted unique dates (YYYY-MM-DD) in ascending order (oldest first)
+      const dates = history
+        .map(item => dayjs(item.assessmentDate).format('YYYY-MM-DD'))
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .sort((a, b) => new Date(a) - new Date(b));
+
+      let best = 0;
+      let tempStreak = 0;
+      let prevDate = null;
+
+      for (let i = 0; i < dates.length; i++) {
+        const currentDate = dayjs(dates[i]);
+        if (prevDate === null) {
+          tempStreak = 1;
+        } else {
+          const diff = currentDate.diff(prevDate, 'day');
+          if (diff === 1) {
+            tempStreak++;
+          } else if (diff > 1) {
+            if (tempStreak > best) {
+              best = tempStreak;
+            }
+            tempStreak = 1; // reset streak
+          }
+        }
+        prevDate = currentDate;
+      }
+      if (tempStreak > best) {
+        best = tempStreak;
+      }
+
+      // Calculate current active streak (must end today or yesterday)
+      let current = 0;
+      const descDates = [...dates].sort((a, b) => new Date(b) - new Date(a)); // today first
+      const today = dayjs().format('YYYY-MM-DD');
+      const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+
+      if (descDates[0] === today || descDates[0] === yesterday) {
+        let expectedDate = dayjs(descDates[0]);
+        for (let i = 0; i < descDates.length; i++) {
+          const currentDate = dayjs(descDates[i]);
+          const diff = expectedDate.diff(currentDate, 'day');
+          if (diff === 0) {
+            current++;
+            expectedDate = expectedDate.subtract(1, 'day');
+          } else {
+            break;
+          }
+        }
+      }
+
+      return { current, best: Math.max(best, current) };
+    }
   };
 
+  const streakType = user?.profile?.streakType || 'Daily';
   const { current: currentStreak, best: bestStreak } = calculateStreak();
 
   // 3. Most Practiced Character
@@ -269,6 +345,26 @@ const Dashboard = () => {
 
   const topImproving = getTopImproving();
 
+  // Daily Trait Insight selection
+  const getDailyTrait = () => {
+    // Use the current day of the year to select a trait, ensuring it changes daily but is stable for a single day
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now - start;
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    const index = dayOfYear % DEFAULT_TRAITS.length;
+    return DEFAULT_TRAITS[index];
+  };
+
+  const dailyTrait = getDailyTrait();
+  const getCleanName = (fullName) => {
+    return fullName.split('(')[0].trim().toLowerCase();
+  };
+  const matchedCharacter = characters.find(c =>
+    getCleanName(c.name) === getCleanName(dailyTrait.name)
+  );
+
   // 6. Filtered Progress Chart Data according to selected time range
   const getFilteredDashHistory = () => {
     if (history.length === 0) return [];
@@ -297,13 +393,7 @@ const Dashboard = () => {
 
   const filteredDashHistory = getFilteredDashHistory();
 
-  const chartData = [...filteredDashHistory]
-    .reverse()
-    .map(item => ({
-      date: dayjs(item.assessmentDate).format('MMM DD'),
-      score: item.alignmentScore,
-      character: item.character.name.split(' (')[0]
-    }));
+  const chartData = aggregateChartData(filteredDashHistory);
 
   const handleQuickStart = () => {
     if (quickStartId) {
@@ -311,10 +401,19 @@ const Dashboard = () => {
     }
   };
 
+  const handleTourClose = () => {
+    setTourOpen(false);
+    if (user) {
+      const key = `helpTourCompleted_${user.id}`;
+      localStorage.setItem(key, 'true');
+      window.dispatchEvent(new Event('helpTourClosed'));
+    }
+  };
+
   return (
     <Box className="space-y-6">
       {/* Welcome Banner */}
-      <Card className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5">
+      <Card id="tour-welcome-banner" className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5">
         <Box className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <Box className="space-y-1">
             <Typography variant="h4" className="font-serif font-bold text-slate-800 dark:text-slate-100">
@@ -325,6 +424,24 @@ const Dashboard = () => {
             </Typography>
           </Box>
           <Box className="flex gap-2">
+            <Button
+              variant="outlined"
+              onClick={() => setTourOpen(true)}
+              startIcon={<HelpIcon />}
+              sx={{
+                borderColor: 'rgba(249, 115, 22, 0.3)',
+                color: '#f97316',
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontWeight: 600,
+                '&:hover': {
+                  borderColor: '#f97316',
+                  backgroundColor: 'rgba(249, 115, 22, 0.08)'
+                }
+              }}
+            >
+              Take Tour
+            </Button>
             <Button
               variant="contained"
               onClick={() => navigate('/characters')}
@@ -370,19 +487,19 @@ const Dashboard = () => {
           {/* Current Streak */}
           <Grid item xs={12} sm={4}>
             <motion.div variants={fadeUp} custom={1} style={{ height: '100%' }}>
-              <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+              <Card id="tour-stats-streak" className="hover:scale-[1.01] transition-transform duration-300 h-full">
                 <CardContent className="p-6 flex items-center justify-between h-full">
                   <Box className="flex flex-col">
                     <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                      Current Streak
+                      Current Streak ({streakType})
                     </Typography>
                     <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
-                      {currentStreak} {currentStreak === 1 ? 'Day' : 'Days'}
+                      {currentStreak} {currentStreak === 1 ? (streakType === 'Weekly' ? 'Week' : 'Day') : (streakType === 'Weekly' ? 'Weeks' : 'Days')}
                     </Typography>
                     <Box className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-full px-2.5 py-0.5 w-fit">
                       <FireIcon sx={{ fontSize: 12 }} className="text-amber-500" />
                       <Typography variant="caption" className="text-amber-600 dark:text-amber-400 font-semibold tracking-tight">
-                        Best: {bestStreak} {bestStreak === 1 ? 'day' : 'days'}
+                        Best: {bestStreak} {bestStreak === 1 ? (streakType === 'Weekly' ? 'week' : 'day') : (streakType === 'Weekly' ? 'weeks' : 'days')}
                       </Typography>
                     </Box>
                   </Box>
@@ -419,11 +536,13 @@ const Dashboard = () => {
 
       {/* Main Grid Content */}
       <Grid container spacing={3}>
-        {/* Progress Charts summary */}
+        {/* Left Column: Progress Chart & Recent Activities */}
         <Grid item xs={12} lg={8}>
-          <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible" style={{ height: '100%' }}>
-          <Card className="h-full">
-            <CardContent className="p-6">
+          <Box className="space-y-6">
+            {/* Progress Charts summary */}
+            <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible">
+            <Card>
+              <CardContent className="p-6">
               <Box className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
                   Recent Alignment Trend
@@ -557,14 +676,105 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           </motion.div>
-        </Grid>
 
-        {/* Quick Start & Improving list */}
-        <Grid item xs={12} lg={4}>
-          <Box className="space-y-6 h-full flex flex-col justify-between">
-            {/* Quick Start Card */}
+          {/* Recent Activity Logs */}
+          <motion.div variants={fadeUp} custom={7} initial="hidden" animate="visible">
+          <Card>
+            <CardContent className="p-6">
+              <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
+                Recent Activities
+              </Typography>
+              {recentActivity.length === 0 ? (
+                <Typography variant="caption" className="text-slate-400 block text-center py-6">
+                  No recent assessment activity recorded.
+                </Typography>
+              ) : (
+                <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+                  <List className="divide-y divide-slate-100 dark:divide-slate-900 p-0">
+                    {recentActivity.map((activity, idx) => (
+                      <motion.div key={activity.id} variants={fadeUp} custom={idx}>
+                        <ListItem className="px-0 py-3 flex justify-between items-center gap-4">
+                          <ListItemText
+                            primary={activity.character.name}
+                            secondary={`Checked: ${dayjs(activity.assessmentDate).format('YYYY-MM-DD')} • "${activity.effortLevel}"`}
+                            primaryTypographyProps={{ className: 'font-bold text-sm text-slate-800 dark:text-slate-100' }}
+                            secondaryTypographyProps={{ className: 'text-xs text-slate-400 mt-0.5' }}
+                          />
+                          <Chip
+                            label={`Score: ${activity.alignmentScore}`}
+                            size="small"
+                            color={activity.alignmentScore >= 4 ? 'success' : activity.alignmentScore >= 3 ? 'primary' : 'warning'}
+                            className="font-semibold text-xs rounded-lg"
+                          />
+                        </ListItem>
+                      </motion.div>
+                    ))}
+                  </List>
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+          </motion.div>
+        </Box>
+      </Grid>
+
+      {/* Right Column: Daily Trait, Quick Start & Improving list */}
+      <Grid item xs={12} lg={4}>
+        <Box className="space-y-6">
+            {/* Daily Trait Insight Card */}
             <motion.div variants={fadeUp} custom={4} initial="hidden" animate="visible">
-            <Card>
+              <Card id="tour-daily-insight" className="border border-orange-500/10 dark:border-orange-500/20 bg-gradient-to-br from-white to-orange-500/[0.02] dark:from-slate-900 dark:to-orange-500/[0.01]">
+                <CardContent className="p-6 space-y-4">
+                  <Box className="flex items-center gap-2.5">
+                    <Box className="p-2 bg-orange-500/10 rounded-xl text-orange-500 flex items-center justify-center">
+                      <SpaIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Typography variant="subtitle2" className="font-bold text-orange-500 tracking-wide uppercase text-[0.7rem]">
+                      Daily Trait Insight
+                    </Typography>
+                  </Box>
+                  <Box className="space-y-1.5">
+                    <Box className="flex items-center justify-between gap-2">
+                      <Typography variant="h5" className="font-serif font-bold text-slate-800 dark:text-slate-100 truncate">
+                        {dailyTrait.name}
+                      </Typography>
+                      <Chip
+                        label={`${dailyTrait.category}`}
+                        size="small"
+                        color={dailyTrait.category === 'Yama' ? 'primary' : dailyTrait.category === 'Niyama' ? 'secondary' : 'default'}
+                        className="font-semibold text-[0.65rem] px-1 h-5"
+                      />
+                    </Box>
+                    <Typography variant="body2" className="text-slate-500 dark:text-slate-400 italic leading-relaxed text-xs">
+                      “{dailyTrait.description}”
+                    </Typography>
+                  </Box>
+                  {matchedCharacter ? (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => navigate(`/assess/${matchedCharacter.id}`)}
+                      className="text-orange-500 border-orange-500/30 hover:border-orange-500 hover:bg-orange-500/5 rounded-xl text-xs py-1.5 capitalize font-semibold"
+                    >
+                      Assess Today's Trait
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={() => navigate('/characters')}
+                      className="text-orange-500 border-orange-500/30 hover:border-orange-500 hover:bg-orange-500/5 rounded-xl text-xs py-1.5 capitalize font-semibold"
+                    >
+                      Explore Attributes
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Quick Start Card */}
+            <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible">
+            <Card id="tour-quick-start">
               <CardContent className="p-6 space-y-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
                   Quick Start Assessment
@@ -601,7 +811,7 @@ const Dashboard = () => {
             </motion.div>
 
             {/* Improving Traits Card */}
-            <motion.div variants={fadeUp} custom={5} initial="hidden" animate="visible" style={{ flexGrow: 1 }}>
+            <motion.div variants={fadeUp} custom={6} initial="hidden" animate="visible" style={{ flexGrow: 1 }}>
             <Card className="flex-grow">
               <CardContent className="p-6">
                 <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
@@ -638,47 +848,11 @@ const Dashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Recent Activity Logs */}
-      <motion.div variants={fadeUp} custom={6} initial="hidden" animate="visible">
-      <Card>
-        <CardContent className="p-6">
-          <Typography variant="h6" className="font-semibold mb-3 text-slate-700 dark:text-slate-350">
-            Recent Activities
-          </Typography>
-          {recentActivity.length === 0 ? (
-            <Typography variant="caption" className="text-slate-400 block text-center py-6">
-              No recent assessment activity recorded.
-            </Typography>
-          ) : (
-            <motion.div variants={staggerContainer} initial="hidden" animate="visible">
-              <List className="divide-y divide-slate-100 dark:divide-slate-900 p-0">
-                {recentActivity.map((activity, idx) => (
-                  <motion.div key={activity.id} variants={fadeUp} custom={idx}>
-                    <ListItem className="px-0 py-3 flex justify-between items-center gap-4">
-                      <ListItemText
-                        primary={activity.character.name}
-                        secondary={`Checked: ${dayjs(activity.assessmentDate).format('YYYY-MM-DD')} • "${activity.effortLevel}"`}
-                        primaryTypographyProps={{ className: 'font-bold text-sm text-slate-800 dark:text-slate-100' }}
-                        secondaryTypographyProps={{ className: 'text-xs text-slate-400 mt-0.5' }}
-                      />
-                      <Chip
-                        label={`Score: ${activity.alignmentScore}`}
-                        size="small"
-                        color={activity.alignmentScore >= 4 ? 'success' : activity.alignmentScore >= 3 ? 'primary' : 'warning'}
-                        className="font-semibold text-xs rounded-lg"
-                      />
-                    </ListItem>
-                  </motion.div>
-                ))}
-              </List>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
-      </motion.div>
-
       {/* Home Page Footer Note */}
       <FooterNote />
+
+      {/* Guided Help Tour */}
+      <HelpTour open={tourOpen} onClose={handleTourClose} />
     </Box>
   );
 };

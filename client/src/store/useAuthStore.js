@@ -7,9 +7,6 @@ import { api } from '../api/client';
 export { api };
 
 export const useAuthStore = create((set, get) => {
-  // Initialize state from localStorage
-  const savedToken = localStorage.getItem('accessToken');
-  const savedRefreshToken = localStorage.getItem('refreshToken');
   let savedUser = null;
   
   try {
@@ -23,10 +20,10 @@ export const useAuthStore = create((set, get) => {
   syncTailwindDarkMode(initialTheme);
 
   return {
-    accessToken: savedToken || null,
-    refreshToken: savedRefreshToken || null,
+    accessToken: null,
+    refreshToken: null,
     user: savedUser || null,
-    isAuthenticated: !!savedToken,
+    isAuthenticated: !!savedUser,
     isLoading: false,
     error: null,
 
@@ -35,17 +32,19 @@ export const useAuthStore = create((set, get) => {
       set({ isLoading: true, error: null });
       try {
         const data = await authService.loginWithGoogle({ credential, isMock, email, name, picture });
-        const { accessToken, refreshToken, user, isNewUser } = data;
+        const { user, isNewUser, accessToken, refreshToken } = data;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
+        if (accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+        }
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
 
         syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
         set({
-          accessToken,
-          refreshToken,
           user,
           isAuthenticated: true,
           isLoading: false
@@ -63,8 +62,12 @@ export const useAuthStore = create((set, get) => {
     setRedirectSession: async (accessToken, refreshToken) => {
       set({ isLoading: true, error: null });
       try {
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        if (accessToken) {
+          localStorage.setItem('accessToken', accessToken);
+        }
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
 
         const data = await authService.getCurrentUser(accessToken);
         const { user } = data;
@@ -73,8 +76,6 @@ export const useAuthStore = create((set, get) => {
         syncTailwindDarkMode(user.profile?.theme || 'Classic');
 
         set({
-          accessToken,
-          refreshToken,
           user,
           isAuthenticated: true,
           isLoading: false
@@ -87,8 +88,6 @@ export const useAuthStore = create((set, get) => {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         set({
-          accessToken: null,
-          refreshToken: null,
           user: null,
           isAuthenticated: false,
           isLoading: false,
@@ -113,8 +112,6 @@ export const useAuthStore = create((set, get) => {
         document.documentElement.classList.remove('dark');
 
         set({
-          accessToken: null,
-          refreshToken: null,
           user: null,
           isAuthenticated: false,
           isLoading: false,
@@ -123,11 +120,24 @@ export const useAuthStore = create((set, get) => {
       }
     },
 
-    updateProfile: async (ageGroup, theme) => {
+    updateProfile: async (ageGroup, theme, streakType, country, city) => {
       set({ isLoading: true, error: null });
       try {
         const token = get().accessToken;
-        const data = await profileService.updateProfile({ ageGroup, theme }, token);
+        const currentStreakType = streakType !== undefined ? streakType : (get().user?.profile?.streakType || 'Daily');
+        const currentAgeGroup = ageGroup !== undefined ? ageGroup : (get().user?.profile?.ageGroup || '');
+        const currentTheme = theme !== undefined ? theme : (get().user?.profile?.theme || 'Classic');
+        const currentCountry = country !== undefined ? country : (get().user?.profile?.country || null);
+        const currentCity = city !== undefined ? city : (get().user?.profile?.city || null);
+        
+        const data = await profileService.updateProfile({ 
+          ageGroup: currentAgeGroup, 
+          theme: currentTheme, 
+          streakType: currentStreakType,
+          country: currentCountry,
+          city: currentCity
+        }, token);
+        
         const updatedProfile = data.profile;
         const currentUser = get().user;
         const updatedUser = {
@@ -136,7 +146,7 @@ export const useAuthStore = create((set, get) => {
         };
 
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        syncTailwindDarkMode(theme);
+        syncTailwindDarkMode(currentTheme);
 
         set({
           user: updatedUser,
@@ -157,23 +167,103 @@ export const useAuthStore = create((set, get) => {
       if (!currentUser) return;
       
       const ageGroup = currentUser.profile?.ageGroup || '';
-      await get().updateProfile(ageGroup, themeName);
+      const streakType = currentUser.profile?.streakType || 'Daily';
+      await get().updateProfile(ageGroup, themeName, streakType);
+    },
+
+    setStreakType: async (streakType) => {
+      const currentUser = get().user;
+      if (!currentUser) return;
+      
+      const ageGroup = currentUser.profile?.ageGroup || '';
+      const theme = currentUser.profile?.theme || 'Classic';
+      await get().updateProfile(ageGroup, theme, streakType);
+    },
+
+    updateAccount: async (name, email, picture) => {
+      set({ isLoading: true, error: null });
+      try {
+        const token = get().accessToken;
+        const data = await profileService.updateAccount({ name, email, picture }, token);
+        const updatedUser = data.user;
+
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        set({
+          user: updatedUser,
+          isLoading: false
+        });
+
+        return updatedUser;
+      } catch (err) {
+        console.error('Update account error:', err);
+        const errMsg = err.response?.data?.message || 'Failed to update account details.';
+        set({ error: errMsg, isLoading: false });
+        throw new Error(errMsg);
+      }
+    },
+
+    acknowledgePolicy: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const token = get().accessToken;
+        const data = await authService.acknowledgePolicy(token);
+        const { user } = data;
+
+        localStorage.setItem('user', JSON.stringify(user));
+
+        set({
+          user,
+          isLoading: false
+        });
+        return user;
+      } catch (err) {
+        console.error('Acknowledge policy error:', err);
+        const errMsg = err.response?.data?.message || 'Failed to acknowledge privacy policy.';
+        set({ error: errMsg, isLoading: false });
+        throw new Error(errMsg);
+      }
+    },
+
+    deleteAccount: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const token = get().accessToken;
+        await profileService.deleteAccount(token);
+
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        
+        document.documentElement.classList.remove('dark');
+
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        });
+      } catch (err) {
+        console.error('Delete account error:', err);
+        const errMsg = err.response?.data?.message || 'Failed to delete account.';
+        set({ error: errMsg, isLoading: false });
+        throw new Error(errMsg);
+      }
     },
 
     refreshSession: async () => {
       const currentRefreshToken = get().refreshToken;
-      if (!currentRefreshToken) return false;
 
       try {
         const data = await authService.refreshToken(currentRefreshToken);
         const { accessToken, refreshToken } = data;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        if (localStorage.getItem('accessToken')) {
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+        }
 
         set({
-          accessToken,
-          refreshToken,
           isAuthenticated: true
         });
 
@@ -181,6 +271,29 @@ export const useAuthStore = create((set, get) => {
       } catch (err) {
         console.error('Session refresh failed:', err);
         get().logout();
+        return false;
+      }
+    },
+
+    checkAuth: async () => {
+      set({ isLoading: true });
+      try {
+        const response = await api.get('/auth/me');
+        const { user } = response.data;
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user, isAuthenticated: true, isLoading: false });
+        return true;
+      } catch (err) {
+        const status = err.response?.status;
+        if (status === 400 || status === 401 || status === 403) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          set({ user: null, isAuthenticated: false });
+        } else {
+          console.error('Auth verification failed (network/server error):', err);
+        }
+        set({ isLoading: false });
         return false;
       }
     }

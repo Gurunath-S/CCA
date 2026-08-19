@@ -34,3 +34,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+# Database Backups
+db_backups/
+*.sql
+
+# Scratch Files
+server/scratch/

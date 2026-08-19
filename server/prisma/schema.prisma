@@ -9,9 +9,10 @@ generator client {
 
 model User {
   id                 String               @id @default(uuid())
-  email              String               @unique
+  email              String
+  emailHash          String?              @unique
   name               String?
-  picture            String?
+  picture            String?              @db.LongText
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   profile            UserProfile?
@@ -20,16 +21,20 @@ model User {
   notes              PersonalNote[]
   refreshTokens      RefreshToken[]
   role               String               @default("USER")
+  policyAcknowledged Boolean              @default(false)
 }
 
 model UserProfile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ageGroup  String?  // Options: "15–20", "20–25", "25–30", "30–40", "40–50", "50–60", "Above 60"
-  theme     String   @default("Classic") // Options: "Serenity", "Midnight Focus", "Nature", "Classic", "Vivekananda"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ageGroup   String?  // Options: "15–20", "20–25", "25–30", "30–40", "40–50", "50–60", "Above 60"
+  theme      String   @default("Classic") // Options: "Serenity", "Midnight Focus", "Nature", "Classic", "Vivekananda"
+  streakType String   @default("Daily")   // Options: "Daily", "Weekly"
+  country    String?
+  city       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model CharacterAttribute {

@@ -2,6 +2,7 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { encrypt, decrypt, hashEmail } = require('../utils/crypto');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -30,6 +31,9 @@ exports.googleLogin = async (req, res) => {
 
     if (isMock || !credential) {
       // Mock Sign In for local development
+      if (isMock && process.env.NODE_ENV === 'production') {
+        return res.status(403).json({ message: 'Mock login is disabled in production' });
+      }
       if (!email) {
         return res.status(400).json({ message: 'Email is required for mock login' });
       }
@@ -50,8 +54,9 @@ exports.googleLogin = async (req, res) => {
     }
 
     // Upsert user in database
+    const userEmailHash = hashEmail(userEmail);
     let user = await prisma.user.findUnique({
-      where: { email: userEmail },
+      where: { emailHash: userEmailHash },
       include: { profile: true }
     });
 
@@ -61,9 +66,10 @@ exports.googleLogin = async (req, res) => {
       isNewUser = true;
       user = await prisma.user.create({
         data: {
-          email: userEmail,
+          email: encrypt(userEmail),
+          emailHash: userEmailHash,
           name: userName,
-          picture: userPicture,
+          picture: userPicture ? encrypt(userPicture) : null,
           profile: {
             create: {
               theme: 'Classic'
@@ -88,11 +94,24 @@ exports.googleLogin = async (req, res) => {
       }
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      // Use 'none' in production so cookies are sent cross-site (Vercel → Render)
+      // 'none' requires secure:true (HTTPS), which is always true on Render
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    };
+
+    res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); // 15 mins
+    res.cookie('refreshToken', refreshToken, cookieOptions);
+
     const isFormPost = req.headers['content-type']?.includes('application/x-www-form-urlencoded');
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     if (isFormPost) {
-      return res.redirect(`${frontendUrl}/login?accessToken=${accessToken}&refreshToken=${refreshToken}&isNewUser=${isNewUser}`);
+      return res.redirect(`${frontendUrl}/login?accessToken=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}&isNewUser=${isNewUser}`);
     }
 
     res.status(200).json({
@@ -101,11 +120,12 @@ exports.googleLogin = async (req, res) => {
       isNewUser,
       user: {
         id: user.id,
-        email: user.email,
+        email: decrypt(user.email),
         name: user.name,
-        picture: user.picture,
+        picture: decrypt(user.picture),
         profile: user.profile,
-        role: user.role
+        role: user.role,
+        policyAcknowledged: user.policyAcknowledged
       }
     });
   } catch (err) {
@@ -121,7 +141,7 @@ exports.googleLogin = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
 
   if (!refreshToken) {
     return res.status(400).json({ message: 'Refresh token is required' });
@@ -158,6 +178,17 @@ exports.refreshToken = async (req, res) => {
       }
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    };
+
+    res.cookie('accessToken', tokens.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+    res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
+
     res.status(200).json({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken
@@ -169,7 +200,7 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.logout = async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
 
   try {
     if (refreshToken) {
@@ -177,6 +208,12 @@ exports.logout = async (req, res) => {
         where: { token: refreshToken }
       });
     }
+
+    const isProd = process.env.NODE_ENV === 'production';
+    const clearOpts = { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' };
+    res.clearCookie('accessToken', clearOpts);
+    res.clearCookie('refreshToken', clearOpts);
+
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (err) {
     console.error('Logout error:', err);
@@ -198,15 +235,42 @@ exports.getMe = async (req, res) => {
     res.status(200).json({
       user: {
         id: user.id,
-        email: user.email,
+        email: decrypt(user.email),
         name: user.name,
-        picture: user.picture,
+        picture: decrypt(user.picture),
         profile: user.profile,
-        role: user.role
+        role: user.role,
+        policyAcknowledged: user.policyAcknowledged
       }
     });
   } catch (err) {
     console.error('getMe error:', err);
     res.status(500).json({ message: 'Server error fetching credentials' });
+  }
+};
+
+exports.acknowledgePolicy = async (req, res) => {
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { policyAcknowledged: true },
+      include: { profile: true }
+    });
+
+    res.status(200).json({
+      message: 'Policy acknowledged successfully',
+      user: {
+        id: updatedUser.id,
+        email: decrypt(updatedUser.email),
+        name: updatedUser.name,
+        picture: decrypt(updatedUser.picture),
+        profile: updatedUser.profile,
+        role: updatedUser.role,
+        policyAcknowledged: updatedUser.policyAcknowledged
+      }
+    });
+  } catch (err) {
+    console.error('acknowledgePolicy error:', err);
+    res.status(500).json({ message: 'Failed to acknowledge policy' });
   }
 };
