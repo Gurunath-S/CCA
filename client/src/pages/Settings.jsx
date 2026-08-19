@@ -35,6 +35,7 @@ import { generatePDFReport } from '../utils/pdfGenerator';
 import { generateCSVReport } from '../utils/csvGenerator';
 import PrivacyPolicyDialog from '../components/PrivacyPolicyDialog';
 import { ExportDataDialog } from '../components/ExportDataDialog';
+import { FooterNote } from '../components/common/FooterNote';
 
 const themes = [
   { name: 'Serenity', desc: 'Calm light blue, minimal', colors: ['#2563eb', '#3b82f6', '#f8fafc'] },
@@ -779,6 +780,8 @@ const Settings = () => {
           {successMsg}
         </Alert>
       </Snackbar>
+
+      <FooterNote />
     </Box>
   );
 };
