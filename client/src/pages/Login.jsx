@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import {
@@ -23,6 +23,29 @@ const Login = () => {
   const [loginError, setLoginError] = useState(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+
+  const [videoSrc, setVideoSrc] = useState('');
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      setVideoSrc('/background_light_waves_720p.mp4');
+    } else {
+      setVideoSrc('/background_light_waves.mp4');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.log('Video autoplay failed or blocked:', err);
+        });
+      }
+    }
+  }, [videoSrc]);
 
   // Handle redirect mode callback tokens from URL query params
   useEffect(() => {
@@ -111,22 +134,25 @@ const Login = () => {
       }}
     >
       {/* Crisp Full-Screen Background Video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        poster="/image_optimized.webp"
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        style={{
-          willChange: 'transform',
-          transform: 'translate3d(0, 0, 0)'
-        }}
-      >
-        <source src="/background_light_waves_720p.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      {videoSrc && (
+        <video
+          ref={videoRef}
+          key={videoSrc}
+          src={videoSrc}
+          autoPlay
+          loop
+          muted
+          playsInline
+          webkit-playsinline="true"
+          preload="auto"
+          poster="/image_optimized.webp"
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          style={{
+            willChange: 'transform',
+            transform: 'translate3d(0, 0, 0)'
+          }}
+        />
+      )}
 
       {/* Subtle Overlay to ensure high-contrast readability without blurring the video */}
       <Box className="absolute inset-0 bg-slate-950/25 z-0" />
@@ -140,7 +166,7 @@ const Login = () => {
       >
         {/* App Logo */}
         <Box className="flex flex-col items-center space-y-2 w-full relative">
-          <SpaIcon className="text-5xl drop-shadow-md animate-pulse" style={{ color: '#f97316' }} />
+          <SpaIcon className="text-5xl drop-shadow-md" style={{ color: '#f97316' }} />
           <Box className="flex items-center justify-center gap-1.5 w-full relative">
             <Typography 
               variant="h4" 
@@ -173,7 +199,7 @@ const Login = () => {
             variant="body2" 
             className="text-slate-300 text-xs max-w-xs mx-auto leading-relaxed font-light tracking-wide"
           >
-            A dedicated platform to evaluate, understand, and refine your core character attributes over time.
+            Understand your character. Reflect on your strengths. Grow intentionally.
           </Typography>
         </Box>
 
@@ -272,7 +298,7 @@ const Login = () => {
             <Box className="flex-grow min-w-0 space-y-1">
               <Typography 
                 variant="body2" 
-                className="text-slate-200 leading-relaxed font-serif text-[13px] italic font-light drop-shadow-sm"
+                className="text-slate-200 leading-relaxed font-serif text-[15px] italic font-light drop-shadow-sm"
               >
                 Dedicated to <strong className="text-orange-300 font-semibold">N. Lakshminarayana Naidu</strong> for 30+ years of outstanding leadership promoting the message of self-reflection.
               </Typography>
@@ -280,7 +306,7 @@ const Login = () => {
                 href="http://vvym.blogspot.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors drop-shadow-sm group mt-1"
+                className="inline-flex items-center text-sm font-bold text-orange-400 hover:text-orange-300 transition-colors drop-shadow-sm group mt-1"
               >
                 <span>vvym.blogspot.com</span>
                 <svg 
