@@ -23,10 +23,10 @@ const steps = [
     placement: 'left'
   },
   {
-    target: 'tour-stats-streak',
-    title: 'Reflection Streak',
-    content: 'Build consistency in your practice. We track daily or weekly reflections to encourage regular self-audit and mindful habits.',
-    placement: 'bottom'
+    target: 'tour-alignment-trend',
+    title: 'Recent Alignment Trend',
+    content: 'Visualize your progress over time. This chart tracks your alignment score trends across 7 days, 30 days, or a custom range to help you see patterns in your character growth.',
+    placement: 'top'
   },
   {
     target: 'tour-sidebar',

@@ -543,7 +543,7 @@ const Dashboard = () => {
           <Box className="space-y-6">
             {/* Progress Charts summary */}
             <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible">
-            <Card>
+            <Card id="tour-alignment-trend">
               <CardContent className="p-6">
               <Box className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
