@@ -124,6 +124,61 @@ const Login = () => {
     };
   }, []);
 
+  if (isLoading) {
+    return (
+      <Box 
+        className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden bg-slate-950"
+        style={{
+          backgroundImage: `url('/image_optimized.webp')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        {/* Crisp Full-Screen Background Video */}
+        {videoSrc && (
+          <video
+            ref={videoRef}
+            key={videoSrc}
+            src={videoSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            webkit-playsinline="true"
+            preload="auto"
+            poster="/image_optimized.webp"
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-40"
+            style={{
+              willChange: 'transform',
+              transform: 'translate3d(0, 0, 0)'
+            }}
+          />
+        )}
+
+        {/* Subtle Overlay */}
+        <Box className="absolute inset-0 bg-slate-950/40 z-0" />
+
+        {/* Beautiful Glassmorphic Loader Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative z-10 max-w-sm w-full p-8 rounded-[32px] backdrop-blur-xl bg-slate-950/70 border border-white/10 shadow-2xl flex flex-col items-center text-center space-y-6"
+        >
+          <CircularProgress size={44} style={{ color: '#f97316' }} />
+          <Box className="space-y-2">
+            <Typography variant="h6" className="font-serif font-semibold text-amber-100 tracking-wide">
+              Verifying Session
+            </Typography>
+            <Typography variant="body2" className="text-slate-300 text-xs leading-relaxed max-w-[240px]">
+              Establishing a secure connection to your Character Coach dashboard. Please wait...
+            </Typography>
+          </Box>
+        </motion.div>
+      </Box>
+    );
+  }
+
   return (
     <Box 
       className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-slate-950"
