@@ -84,7 +84,7 @@ const Login = () => {
       const btnContainer = document.getElementById("google-signin-button");
       if (window.google && btnContainer) {
         const apiBaseUrl = import.meta.env.VITE_API_URL 
-          ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
+          ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') 
           : 'http://localhost:5000';
 
         window.google.accounts.id.initialize({

@@ -412,127 +412,129 @@ const Dashboard = () => {
 
   return (
     <Box className="space-y-6">
-      {/* Welcome Banner */}
-      <Card id="tour-welcome-banner" className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5">
-        <Box className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <Box className="space-y-1">
-            <Typography variant="h4" className="font-serif font-bold text-slate-800 dark:text-slate-100">
-              Welcome, {user?.name || 'Practitioner'}
-            </Typography>
-            <Typography variant="body1" className="text-slate-500 dark:text-slate-400">
-              "Character is repeated habit." Continue your self-reflection journey today.
-            </Typography>
+      <Box id="tour-welcome-and-stats" className="space-y-6">
+        {/* Welcome Banner */}
+        <Card id="tour-welcome-banner" className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-500/10 via-yellow-600/5 to-blue-500/5">
+          <Box className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <Box className="space-y-1">
+              <Typography variant="h4" className="font-serif font-bold text-slate-800 dark:text-slate-100">
+                Welcome, {user?.name || 'Practitioner'}
+              </Typography>
+              <Typography variant="body1" className="text-slate-500 dark:text-slate-400">
+                "Character is repeated habit." Continue your self-reflection journey today.
+              </Typography>
+            </Box>
+            <Box className="flex gap-2">
+              <Button
+                variant="outlined"
+                onClick={() => setTourOpen(true)}
+                startIcon={<HelpIcon />}
+                sx={{
+                  borderColor: 'rgba(249, 115, 22, 0.3)',
+                  color: '#f97316',
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.08)'
+                  }
+                }}
+              >
+                Take Tour
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/characters')}
+                startIcon={<ListIcon />}
+                className="bg-orange-500 hover:bg-orange-600 rounded-xl"
+              >
+                View Characters
+              </Button>
+            </Box>
           </Box>
-          <Box className="flex gap-2">
-            <Button
-              variant="outlined"
-              onClick={() => setTourOpen(true)}
-              startIcon={<HelpIcon />}
-              sx={{
-                borderColor: 'rgba(249, 115, 22, 0.3)',
-                color: '#f97316',
-                borderRadius: '12px',
-                textTransform: 'none',
-                fontWeight: 600,
-                '&:hover': {
-                  borderColor: '#f97316',
-                  backgroundColor: 'rgba(249, 115, 22, 0.08)'
-                }
-              }}
-            >
-              Take Tour
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/characters')}
-              startIcon={<ListIcon />}
-              className="bg-orange-500 hover:bg-orange-600 rounded-xl"
-            >
-              View Characters
-            </Button>
-          </Box>
-        </Box>
-      </Card>
+        </Card>
 
-      {error && (
-        <Alert severity="error" className="rounded-xl shadow-sm border border-red-200/50 dark:border-red-900/30">
-          {error}
-        </Alert>
-      )}
+        {error && (
+          <Alert severity="error" className="rounded-xl shadow-sm border border-red-200/50 dark:border-red-900/30">
+            {error}
+          </Alert>
+        )}
 
-      {/* Stats Cards Grid */}
-      <motion.div variants={staggerContainer} initial="hidden" animate="visible">
-        <Grid container spacing={3} alignItems="stretch">
-          {/* Total Assessments */}
-          <Grid item xs={12} sm={4}>
-            <motion.div variants={fadeUp} custom={0} style={{ height: '100%' }}>
-              <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
-                <CardContent className="p-6 flex items-center justify-between h-full">
-                  <Box>
-                    <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                      Total Assessments
-                    </Typography>
-                    <Typography variant="h3" className="font-bold font-serif text-slate-800 dark:text-slate-100 mt-1">
-                      {totalAssessments}
-                    </Typography>
-                  </Box>
-                  <Box className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-2xl text-blue-500">
-                    <CheckIcon fontSize="large" />
-                  </Box>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </Grid>
-
-          {/* Current Streak */}
-          <Grid item xs={12} sm={4}>
-            <motion.div variants={fadeUp} custom={1} style={{ height: '100%' }}>
-              <Card id="tour-stats-streak" className="hover:scale-[1.01] transition-transform duration-300 h-full">
-                <CardContent className="p-6 flex items-center justify-between h-full">
-                  <Box className="flex flex-col">
-                    <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                      Current Streak ({streakType})
-                    </Typography>
-                    <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
-                      {currentStreak} {currentStreak === 1 ? (streakType === 'Weekly' ? 'Week' : 'Day') : (streakType === 'Weekly' ? 'Weeks' : 'Days')}
-                    </Typography>
-                    <Box className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-full px-2.5 py-0.5 w-fit">
-                      <FireIcon sx={{ fontSize: 12 }} className="text-amber-500" />
-                      <Typography variant="caption" className="text-amber-600 dark:text-amber-400 font-semibold tracking-tight">
-                        Best: {bestStreak} {bestStreak === 1 ? (streakType === 'Weekly' ? 'week' : 'day') : (streakType === 'Weekly' ? 'weeks' : 'days')}
+        {/* Stats Cards Grid */}
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+          <Grid container spacing={3} alignItems="stretch">
+            {/* Total Assessments */}
+            <Grid item xs={12} sm={4}>
+              <motion.div variants={fadeUp} custom={0} style={{ height: '100%' }}>
+                <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+                  <CardContent className="p-6 flex items-center justify-between h-full">
+                    <Box>
+                      <Typography variant="subtitle2" className="text-slate-400 font-medium">
+                        Total Assessments
+                      </Typography>
+                      <Typography variant="h3" className="font-bold font-serif text-slate-800 dark:text-slate-100 mt-1">
+                        {totalAssessments}
                       </Typography>
                     </Box>
-                  </Box>
-                  <Box className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-2xl text-orange-500 self-start">
-                    <FireIcon fontSize="large" />
-                  </Box>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </Grid>
+                    <Box className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-2xl text-blue-500">
+                      <CheckIcon fontSize="large" />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
 
-          {/* Most Practiced */}
-          <Grid item xs={12} sm={4}>
-            <motion.div variants={fadeUp} custom={2} style={{ height: '100%' }}>
-              <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
-                <CardContent className="p-6 flex items-center justify-between h-full">
-                  <Box className="max-w-[70%]">
-                    <Typography variant="subtitle2" className="text-slate-400 font-medium">
-                      Most Practiced Trait
-                    </Typography>
-                    <Typography variant="h5" className="font-bold truncate text-teal-600 dark:text-teal-400 mt-2">
-                      {mostPracticed}
-                    </Typography>
-                  </Box>
-                  <Box className="p-3 bg-teal-50 dark:bg-teal-950/30 rounded-2xl text-teal-500">
-                    <SpaIcon fontSize="large" />
-                  </Box>
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* Current Streak */}
+            <Grid item xs={12} sm={4}>
+              <motion.div variants={fadeUp} custom={1} style={{ height: '100%' }}>
+                <Card id="tour-stats-streak" className="hover:scale-[1.01] transition-transform duration-300 h-full">
+                  <CardContent className="p-6 flex items-center justify-between h-full">
+                    <Box className="flex flex-col">
+                      <Typography variant="subtitle2" className="text-slate-400 font-medium">
+                        Current Streak ({streakType})
+                      </Typography>
+                      <Typography variant="h3" className="font-bold font-serif text-orange-500 mt-1">
+                        {currentStreak} {currentStreak === 1 ? (streakType === 'Weekly' ? 'Week' : 'Day') : (streakType === 'Weekly' ? 'Weeks' : 'Days')}
+                      </Typography>
+                      <Box className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-full px-2.5 py-0.5 w-fit">
+                        <FireIcon sx={{ fontSize: 12 }} className="text-amber-500" />
+                        <Typography variant="caption" className="text-amber-600 dark:text-amber-400 font-semibold tracking-tight">
+                          Best: {bestStreak} {bestStreak === 1 ? (streakType === 'Weekly' ? 'week' : 'day') : (streakType === 'Weekly' ? 'weeks' : 'days')}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-2xl text-orange-500 self-start">
+                      <FireIcon fontSize="large" />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+
+            {/* Most Practiced */}
+            <Grid item xs={12} sm={4}>
+              <motion.div variants={fadeUp} custom={2} style={{ height: '100%' }}>
+                <Card className="hover:scale-[1.01] transition-transform duration-300 h-full">
+                  <CardContent className="p-6 flex items-center justify-between h-full">
+                    <Box className="max-w-[70%]">
+                      <Typography variant="subtitle2" className="text-slate-400 font-medium">
+                        Most Practiced Trait
+                      </Typography>
+                      <Typography variant="h5" className="font-bold truncate text-teal-600 dark:text-teal-400 mt-2">
+                        {mostPracticed}
+                      </Typography>
+                    </Box>
+                    <Box className="p-3 bg-teal-50 dark:bg-teal-950/30 rounded-2xl text-teal-500">
+                      <SpaIcon fontSize="large" />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
           </Grid>
-        </Grid>
-      </motion.div>
+        </motion.div>
+      </Box>
 
       {/* Main Grid Content */}
       <Grid container spacing={3}>
@@ -541,7 +543,7 @@ const Dashboard = () => {
           <Box className="space-y-6">
             {/* Progress Charts summary */}
             <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible">
-            <Card>
+            <Card id="tour-alignment-trend">
               <CardContent className="p-6">
               <Box className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <Typography variant="h6" className="font-semibold text-slate-700 dark:text-slate-350">
